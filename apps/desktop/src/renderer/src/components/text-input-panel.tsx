@@ -159,7 +159,7 @@ export const TextInputPanel = forwardRef<TextInputPanelRef, TextInputPanelProps>
           <button
             onClick={onCancel}
             disabled={isProcessing}
-            className="rounded px-2 py-1 transition-colors hover:bg-white/10"
+            className="modern-interactive modern-text-strong rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
           >
             Cancel
           </button>
@@ -167,9 +167,9 @@ export const TextInputPanel = forwardRef<TextInputPanelRef, TextInputPanelProps>
             onClick={handleSubmit}
             disabled={!text.trim() || isProcessing}
             className={cn(
-              "rounded px-2 py-1 transition-colors",
+              "modern-button modern-shine rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
               text.trim() && !isProcessing
-                ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+                ? ""
                 : "cursor-not-allowed opacity-50",
             )}
           >

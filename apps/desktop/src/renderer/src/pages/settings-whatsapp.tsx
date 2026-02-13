@@ -8,6 +8,7 @@ import type { Config } from "@shared/types"
 import { AlertTriangle, Loader2, CheckCircle2, XCircle, RefreshCw, LogOut, QrCode as QrCodeIcon, EyeOff } from "lucide-react"
 import { tipcClient } from "@renderer/lib/tipc-client"
 import { QRCodeSVG } from "qrcode.react"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 /**
  * Mask a phone number for streamer mode
@@ -134,7 +135,7 @@ export function Component() {
   const streamerMode = cfg.streamerModeEnabled ?? false
 
   return (
-    <div className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
       <div className="grid gap-4">
         <ControlGroup
           title="WhatsApp Integration"
@@ -381,7 +382,7 @@ export function Component() {
           </ControlGroup>
         )}
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }
 

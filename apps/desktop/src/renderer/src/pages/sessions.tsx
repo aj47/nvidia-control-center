@@ -15,6 +15,7 @@ import { SessionsKanban } from "@renderer/components/sessions-kanban"
 import { PredefinedPromptsMenu } from "@renderer/components/predefined-prompts-menu"
 import { useConfigQuery } from "@renderer/lib/query-client"
 import { getMcpToolsShortcutDisplay, getTextInputShortcutDisplay, getDictationShortcutDisplay } from "@shared/key-utils"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 function EmptyState({ onTextClick, onVoiceClick, onSelectPrompt, textInputShortcut, voiceInputShortcut, dictationShortcut }: {
   onTextClick: () => void
@@ -367,8 +368,8 @@ export function Component() {
   if (expandedSessionId && expandedProgress) {
     const isCollapsed = collapsedSessions[expandedSessionId] ?? false
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 min-h-0 p-4">
+      <SettingsPageShell className="flex h-full flex-col">
+        <div className="sessions-page-shell-content flex-1 min-h-0 p-4">
           <div className="h-full">
             <AgentProgress
               progress={expandedProgress}
@@ -390,14 +391,14 @@ export function Component() {
             />
           </div>
         </div>
-      </div>
+      </SettingsPageShell>
     )
   }
 
   return (
-    <div className="group/tile flex h-full flex-col">
+    <SettingsPageShell className="group/tile flex h-full flex-col">
       {/* Main content area */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide-until-hover">
+      <div className="sessions-page-shell-content flex-1 overflow-y-auto scrollbar-hide-until-hover">
         {/* Show empty state when no sessions and no pending */}
         {allProgressEntries.length === 0 && !pendingProgress ? (
           <EmptyState
@@ -411,7 +412,7 @@ export function Component() {
         ) : (
           <>
             {/* Header with start buttons, view toggle, and clear inactive button */}
-            <div className="px-4 py-2 flex items-center justify-between bg-muted/20 border-b">
+            <div className="sessions-page-header px-4 py-2 flex items-center justify-between bg-muted/20 border-b">
               <div className="flex gap-2 items-center">
                 <Button size="sm" onClick={handleTextClick} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -554,7 +555,6 @@ export function Component() {
         )}
 
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }
-

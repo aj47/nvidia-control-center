@@ -781,7 +781,7 @@ export function Component() {
       minWidth={200}
       minHeight={minHeight}
       className={cn(
-        "floating-panel modern-text-strong flex h-screen flex-col text-foreground",
+        "floating-panel frost-edge-glow modern-text-strong flex h-screen flex-col rounded-2xl overflow-hidden text-foreground",
         isDark ? "dark" : ""
       )}
     >
@@ -846,16 +846,20 @@ export function Component() {
                       {visualizerData
                         .slice()
                         .map((rms, index) => {
+                          const isIdleSample = rms === -1000
+                          const barHeight = isIdleSample
+                            ? 20
+                            : Math.min(100, Math.max(20, rms * 100))
                           return (
                             <div
                               key={index}
                               className={cn(
-                                "h-full w-0.5 shrink-0 rounded-lg",
-                                "bg-red-500 dark:bg-white",
-                                rms === -1000 && "bg-neutral-400 dark:bg-neutral-500",
+                                "panel-waveform-bar h-full w-[2.5px] shrink-0 rounded-full",
+                                !isIdleSample && "bg-primary/85",
+                                isIdleSample && "panel-waveform-bar-idle",
                               )}
                               style={{
-                                height: `${Math.min(100, Math.max(16, rms * 100))}%`,
+                                height: `${barHeight}%`,
                               }}
                             />
                           )
@@ -869,8 +873,8 @@ export function Component() {
                       onClick={handleSubmitRecording}
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                        "bg-blue-500 hover:bg-blue-600 text-white",
-                        "dark:bg-blue-600 dark:hover:bg-blue-700"
+                        "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:bg-primary/80",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       )}
                     >
                       <Send className="h-3.5 w-3.5" />

@@ -33,6 +33,7 @@ import { useState, useEffect } from "react"
 import { ProfileBadge } from "@renderer/components/profile-badge"
 
 import { Config, Profile } from "@shared/types"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 const LabelWithTooltip = ({
   htmlFor,
@@ -376,7 +377,7 @@ DOMAIN-SPECIFIC RULES:
 - For API calls: Respect rate limits and handle errors gracefully`
 
   return (
-    <div className="modern-panel h-full overflow-auto px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-auto px-6 py-4">
 
       <div className="space-y-6">
         <div className="space-y-4">
@@ -677,6 +678,6 @@ DOMAIN-SPECIFIC RULES:
         </Dialog>
 
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }
