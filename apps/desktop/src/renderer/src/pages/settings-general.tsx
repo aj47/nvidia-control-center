@@ -37,6 +37,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { Config } from "@shared/types"
 import { KeyRecorder } from "@renderer/components/key-recorder"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 import {
   getEffectiveShortcut,
   formatKeyComboForDisplay,
@@ -123,7 +124,7 @@ export function Component() {
   if (!configQuery.data) return null
 
   return (
-    <div className="modern-panel h-full overflow-auto px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-auto px-6 py-4">
 
       <div className="grid gap-4">
         <ControlGroup title="App">
@@ -172,7 +173,7 @@ export function Component() {
           <Control label="Theme" className="px-3">
             <Select
               value={configQuery.data.themePreference || "system"}
-              onValueChange={(value: "system" | "light" | "dark") => {
+              onValueChange={(value: "system" | "light" | "dark" | "frost") => {
                 saveConfig({
                   themePreference: value,
                 })
@@ -193,6 +194,7 @@ export function Component() {
                 <SelectItem value="system">System</SelectItem>
                 <SelectItem value="light">Light</SelectItem>
                 <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="frost">Frost</SelectItem>
               </SelectContent>
             </Select>
           </Control>
@@ -1099,6 +1101,6 @@ export function Component() {
           </Control>
         </ControlGroup>
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }

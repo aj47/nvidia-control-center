@@ -16,6 +16,7 @@ import type { Config } from "@shared/types"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { QRCodeSVG } from "qrcode.react"
 import { EyeOff, ExternalLink } from "lucide-react"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 /**
  * Mask a URL for streamer mode - masks all alphanumeric content (including the protocol)
@@ -116,7 +117,7 @@ export function Component() {
     : undefined
 
   return (
-    <div className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
       <div className="grid gap-4">
         <ControlGroup
           title="Remote Server"
@@ -620,7 +621,7 @@ export function Component() {
           </ControlGroup>
         )}
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }
 

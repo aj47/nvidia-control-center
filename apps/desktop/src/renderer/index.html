@@ -9,12 +9,13 @@
       content="default-src 'self' blob: assets:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     />
     <script>
-      function toggleThemeClass(darkMode) {
+      function applyThemeClass(resolved) {
         const root = document.documentElement
-        if (darkMode) {
+        root.classList.remove("dark", "frost")
+        if (resolved === "dark") {
           root.classList.add("dark")
-        } else {
-          root.classList.remove("dark")
+        } else if (resolved === "frost") {
+          root.classList.add("frost")
         }
       }
 
@@ -22,7 +23,7 @@
         try {
           // Try to get theme preference from config
           const configData = localStorage.getItem("theme-preference")
-          if (configData) {
+          if (configData && ["light", "dark", "frost", "system"].includes(configData)) {
             return configData
           }
         } catch (e) {
@@ -31,20 +32,16 @@
         return "system"
       }
 
+      function resolveTheme(preference) {
+        if (preference === "light") return "light"
+        if (preference === "dark") return "dark"
+        if (preference === "frost") return "frost"
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      }
+
       function applyTheme(themePreference = null) {
         const preference = themePreference || getThemePreference()
-
-        if (preference === "light") {
-          toggleThemeClass(false)
-        } else if (preference === "dark") {
-          toggleThemeClass(true)
-        } else {
-          // System preference
-          const darkMode = window.matchMedia(
-            "(prefers-color-scheme: dark)",
-          ).matches
-          toggleThemeClass(darkMode)
-        }
+        applyThemeClass(resolveTheme(preference))
       }
 
       function initThemeClass() {
@@ -57,7 +54,7 @@
         .addEventListener("change", (e) => {
           const preference = getThemePreference()
           if (preference === "system") {
-            toggleThemeClass(e.matches)
+            applyThemeClass(e.matches ? "dark" : "light")
           }
         })
 
