@@ -343,26 +343,7 @@
   }
 
   .dark .modern-panel {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.04) 0%,
-        rgba(0, 0, 0, 0.22) 100%
-      ),
-      hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    box-shadow:
-      0 10px 26px rgba(0, 0, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  .dark .modern-panel:hover,
-  .dark .modern-panel:focus-within {
-    border-color: hsl(var(--primary) / 0.42);
-    box-shadow:
-      0 14px 34px rgba(0, 0, 0, 0.62),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 0 18px hsl(var(--primary) / 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   .frost .modern-panel {
@@ -395,17 +376,7 @@
   }
 
   .dark .modern-panel-subtle {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.03) 0%,
-        rgba(0, 0, 0, 0.18) 100%
-      ),
-      hsl(var(--muted) / 0.42);
-    border: 1px solid hsl(var(--border) / 0.75);
-    box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   .frost .modern-panel-subtle {
@@ -429,18 +400,9 @@
   }
 
   .dark .modern-panel-strong {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(0, 0, 0, 0.28) 100%
-      ),
-      hsl(var(--card));
-    border: 1px solid hsl(var(--border));
     box-shadow:
-      0 18px 46px rgba(0, 0, 0, 0.7),
-      0 6px 16px rgba(0, 0, 0, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      0 8px 24px rgba(0, 0, 0, 0.4),
+      0 2px 6px rgba(0, 0, 0, 0.2);
   }
 
   .frost .modern-panel-strong {
@@ -1416,30 +1378,6 @@
     position: relative;
   }
 
-  /* Control-center edge highlight (dark theme only; non-affiliated) */
-  .dark .frost-edge-glow::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    box-shadow:
-      inset 0 0 0 1px hsl(var(--primary) / 0.28),
-      0 0 18px hsl(var(--primary) / 0.12);
-    opacity: 0.75;
-    transition:
-      box-shadow 0.22s ease,
-      opacity 0.22s ease;
-  }
-
-  .dark .frost-edge-glow:hover::after,
-  .dark .frost-edge-glow:focus-within::after {
-    box-shadow:
-      inset 0 0 0 1px hsl(var(--primary) / 0.5),
-      0 0 26px hsl(var(--primary) / 0.18);
-    opacity: 0.92;
-  }
-
   .frost .frost-edge-glow::after {
     content: "";
     position: absolute;
@@ -1493,39 +1431,30 @@
 }
 
 .dark {
-  /* Dark control-center palette (green-accent; non-affiliated) */
-  --background: 108 10% 4%;
-  --foreground: 102 20% 96%;
-  --card: 108 10% 7%;
-  --card-foreground: 102 18% 94%;
-  --popover: 108 10% 7%;
-  --popover-foreground: 102 18% 94%;
-
-  /* Primary accent: deeper NVIDIA green */
-  --primary: 102 72% 38%;
-  --primary-foreground: 120 20% 96%;
-
-  --secondary: 110 9% 14%;
-  --secondary-foreground: 102 16% 94%;
-
-  --muted: 110 8% 11%;
-  --muted-foreground: 104 10% 71%;
-
-  --accent: 110 10% 12%;
-  --accent-foreground: 102 16% 94%;
-
-  --destructive: 0 70% 42%;
+  --background: 0 0% 0%;
+  --foreground: 0 0% 99%;
+  --card: 0 0% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 14.9%;
+  --muted-foreground: 0 0% 63.9%;
+  --accent: 0 0% 14.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-
-  --border: 108 9% 18%;
-  --input: 108 9% 18%;
-  --ring: 102 78% 46%;
-
-  --chart-1: 102 74% 45%;
-  --chart-2: 132 48% 44%;
-  --chart-3: 46 82% 57%;
-  --chart-4: 165 36% 43%;
-  --chart-5: 350 69% 58%;
+  --border: 0 0% 14.9%;
+  --input: 0 0% 14.9%;
+  --ring: 221 83% 53%;
+  --chart-1: 220 70% 50%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
 }
 
 /* ================================================================
@@ -1813,22 +1742,6 @@ html {
 
 html.dark {
   color-scheme: dark;
-}
-
-/* Dark theme atmosphere: subtle vignette + green accent glow */
-html.dark body {
-  background:
-    radial-gradient(
-      1200px 900px at 18% 12%,
-      rgba(132, 255, 40, 0.09) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      1000px 760px at 86% 76%,
-      rgba(132, 255, 40, 0.06) 0%,
-      transparent 58%
-    ),
-    linear-gradient(180deg, rgba(18, 22, 18, 1) 0%, rgba(6, 8, 6, 1) 100%);
 }
 
 html.frost {
