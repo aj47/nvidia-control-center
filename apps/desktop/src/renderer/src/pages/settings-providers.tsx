@@ -21,6 +21,7 @@ import { ProviderModelSelector } from "@renderer/components/model-selector"
 import { PresetModelSelector } from "@renderer/components/preset-model-selector"
 import { ProfileBadgeCompact } from "@renderer/components/profile-badge"
 import { Mic, Bot, Volume2, FileText, CheckCircle2, ChevronDown, ChevronRight, Brain, Zap, BookOpen, Settings2, Cpu, Download, Loader2 } from "lucide-react"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 import {
   STT_PROVIDERS,
@@ -609,7 +610,7 @@ export function Component() {
   const weakPreset = getPresetById(weakPresetId)
 
   return (
-    <div className="modern-panel h-full overflow-auto px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-auto px-6 py-4">
 
       <div className="grid gap-4">
         {/* Provider Selection with clear visual hierarchy */}
@@ -1567,6 +1568,6 @@ export function Component() {
           )}
         </div>
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }

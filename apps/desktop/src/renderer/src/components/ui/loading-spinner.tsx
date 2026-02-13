@@ -1,6 +1,7 @@
 import { cn } from "@renderer/lib/utils"
 import loadingSpinnerGif from "@renderer/assets/loading-spinner.gif"
 import lightSpinnerGif from "@renderer/assets/light-spinner.gif"
+import frostLogoGlobePng from "@renderer/assets/frost-logo-globe.png"
 import { useTheme } from "@renderer/contexts/theme-context"
 
 interface LoadingSpinnerProps {
@@ -8,6 +9,7 @@ interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg"
   showText?: boolean
   text?: string
+  useFrostSidebarLogo?: boolean
 }
 
 const sizeClasses = {
@@ -23,18 +25,39 @@ export function LoadingSpinner({
   size = "md",
   showText = false,
   text = "Loading...",
+  useFrostSidebarLogo = false,
 }: LoadingSpinnerProps) {
-  const { isDark } = useTheme()
-  const spinnerSrc = isDark ? loadingSpinnerGif : lightSpinnerGif
+  const { isDark, isFrost } = useTheme()
+  const showFrostSidebarLogo = useFrostSidebarLogo && isFrost
+  const spinnerSrc = showFrostSidebarLogo
+    ? frostLogoGlobePng
+    : isDark
+      ? loadingSpinnerGif
+      : lightSpinnerGif
+  const spinnerImageClassName = cn(
+    sizeClasses[size],
+    "object-contain",
+    isFrost && "frost-gif-spinner-logo",
+  )
 
   return (
     <div className={cn("flex items-center justify-center", className)}>
       <div className="flex items-center gap-2">
-        <img
-          src={spinnerSrc}
-          alt="Loading..."
-          className={cn(sizeClasses[size], "object-contain")}
-        />
+        {showFrostSidebarLogo ? (
+          <div className={cn(sizeClasses[size], "frost-sidebar-spinner-frame")}>
+            <img
+              src={spinnerSrc}
+              alt="Loading..."
+              className="frost-sidebar-spinner-logo"
+            />
+          </div>
+        ) : (
+          <img
+            src={spinnerSrc}
+            alt="Loading..."
+            className={spinnerImageClassName}
+          />
+        )}
         {showText && (
           <span className="text-sm text-muted-foreground">{text}</span>
         )}

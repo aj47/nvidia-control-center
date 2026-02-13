@@ -24,6 +24,7 @@ import { AgentSkill } from "@shared/types"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Download, Upload, FolderOpen, RefreshCw, Sparkles, Loader2, ChevronDown, FolderUp, Github } from "lucide-react"
 import { ProfileBadge } from "@renderer/components/profile-badge"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 export function Component() {
   const queryClient = useQueryClient()
@@ -336,7 +337,7 @@ export function Component() {
   }
 
   return (
-    <div className="modern-panel h-full min-w-0 overflow-y-auto overflow-x-hidden px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full min-w-0 overflow-y-auto overflow-x-hidden px-6 py-4">
       <div className="min-w-0 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -637,7 +638,7 @@ export function Component() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }
 

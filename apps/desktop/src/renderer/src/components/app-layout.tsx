@@ -8,6 +8,7 @@ import { ActiveAgentsSidebar } from "@renderer/components/active-agents-sidebar"
 import { SidebarProfileSelector } from "@renderer/components/sidebar-profile-selector"
 import { useSidebar, SIDEBAR_DIMENSIONS } from "@renderer/hooks/use-sidebar"
 import { useConfigQuery } from "@renderer/lib/query-client"
+import { useTheme } from "@renderer/contexts/theme-context"
 import { PanelLeftClose, PanelLeft } from "lucide-react"
 
 type NavLinkItem = {
@@ -20,11 +21,13 @@ export const Component = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [settingsExpanded, setSettingsExpanded] = useState(true)
-  const { isCollapsed, width, isResizing, toggleCollapse, handleResizeStart } = useSidebar()
+  const { isCollapsed, width, isResizing, toggleCollapse, handleResizeStart } =
+    useSidebar()
+  const { isFrost } = useTheme()
   const configQuery = useConfigQuery()
 
   const whatsappEnabled = configQuery.data?.whatsappEnabled ?? false
-  const memoriesEnabled = configQuery.data?.memoriesEnabled !== false  // default true
+  const memoriesEnabled = configQuery.data?.memoriesEnabled !== false // default true
 
   const settingsNavLinks: NavLinkItem[] = [
     {
@@ -38,11 +41,15 @@ export const Component = () => {
       icon: "i-mingcute-brain-line",
     },
     // Only show Memories when enabled
-    ...(memoriesEnabled ? [{
-      text: "Memories",
-      href: "/memories",
-      icon: "i-mingcute-book-2-line",
-    }] : []),
+    ...(memoriesEnabled
+      ? [
+          {
+            text: "Memories",
+            href: "/memories",
+            icon: "i-mingcute-book-2-line",
+          },
+        ]
+      : []),
     {
       text: "Profile",
       href: "/settings/tools",
@@ -64,11 +71,15 @@ export const Component = () => {
       icon: "i-mingcute-server-line",
     },
     // Only show WhatsApp settings when enabled
-    ...(whatsappEnabled ? [{
-      text: "WhatsApp",
-      href: "/settings/whatsapp",
-      icon: "i-mingcute-message-4-line",
-    }] : []),
+    ...(whatsappEnabled
+      ? [
+          {
+            text: "WhatsApp",
+            href: "/settings/whatsapp",
+            icon: "i-mingcute-message-4-line",
+          },
+        ]
+      : []),
     {
       text: "Agent Personas",
       href: "/settings/agent-personas",
@@ -126,7 +137,9 @@ export const Component = () => {
         }}
       >
         <span className={cn(link.icon, "shrink-0")}></span>
-        {!isCollapsed && <span className="font-medium truncate">{link.text}</span>}
+        {!isCollapsed && (
+          <span className="truncate font-medium">{link.text}</span>
+        )}
       </NavLink>
     )
   }
@@ -138,9 +151,9 @@ export const Component = () => {
       {/* Sidebar with dynamic width */}
       <div
         className={cn(
-          "relative flex shrink-0 flex-col border-r bg-background",
+          "bg-background frost-edge-glow relative flex shrink-0 flex-col border-r",
           !isResizing && "transition-all duration-200",
-          isResizing && "select-none"
+          isResizing && "select-none",
         )}
         style={{ width: sidebarWidth }}
       >
@@ -150,15 +163,19 @@ export const Component = () => {
             "flex items-center",
             isCollapsed ? "justify-center" : "justify-end",
             // On macOS, add extra top margin when collapsed to avoid traffic light buttons
-            process.env.IS_MAC ? (isCollapsed ? "h-16 mt-6" : "h-10 pt-6") : "h-8 pt-2",
-            isCollapsed ? "px-1" : "px-2"
+            process.env.IS_MAC
+              ? isCollapsed
+                ? "mt-6 h-16"
+                : "h-10 pt-6"
+              : "h-8 pt-2",
+            isCollapsed ? "px-1" : "px-2",
           )}
         >
           <button
             onClick={toggleCollapse}
             className={cn(
               "flex h-6 w-6 items-center justify-center rounded-md transition-colors",
-              "text-muted-foreground hover:bg-accent hover:text-foreground"
+              "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -193,7 +210,7 @@ export const Component = () => {
                       "flex h-8 w-full items-center justify-center rounded-md transition-all duration-200",
                       isActive
                         ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                     )}
                     title={link.text}
                     aria-label={link.text}
@@ -211,13 +228,17 @@ export const Component = () => {
                 onClick={() => setSettingsExpanded(!settingsExpanded)}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
-                  "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                 )}
               >
-                <span className={cn(
-                  "transition-transform duration-200",
-                  settingsExpanded ? "i-mingcute-down-line" : "i-mingcute-right-line"
-                )}></span>
+                <span
+                  className={cn(
+                    "transition-transform duration-200",
+                    settingsExpanded
+                      ? "i-mingcute-down-line"
+                      : "i-mingcute-right-line",
+                  )}
+                ></span>
                 <span className="i-mingcute-settings-3-line"></span>
                 <span className="truncate">Settings</span>
               </button>
@@ -233,7 +254,7 @@ export const Component = () => {
 
         {/* Sessions Section - shows sessions list, scrollable to bottom */}
         {!isCollapsed && (
-          <div className="mt-2 min-h-0 flex-1 overflow-y-auto scrollbar-none">
+          <div className="scrollbar-none mt-2 min-h-0 flex-1 overflow-y-auto">
             <ActiveAgentsSidebar />
           </div>
         )}
@@ -242,7 +263,12 @@ export const Component = () => {
         {isCollapsed && (
           <div className="mt-2 px-1">
             {(() => {
-              const isSessionsActive = location.pathname === "/" || (!location.pathname.startsWith("/settings") && !location.pathname.startsWith("/onboarding") && !location.pathname.startsWith("/setup") && !location.pathname.startsWith("/panel"))
+              const isSessionsActive =
+                location.pathname === "/" ||
+                (!location.pathname.startsWith("/settings") &&
+                  !location.pathname.startsWith("/onboarding") &&
+                  !location.pathname.startsWith("/setup") &&
+                  !location.pathname.startsWith("/panel"))
               return (
                 <NavLink
                   to="/"
@@ -251,7 +277,7 @@ export const Component = () => {
                     "flex h-8 w-full items-center justify-center rounded-md transition-all duration-200",
                     isSessionsActive
                       ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                   )}
                   title="Sessions"
                   aria-label="Sessions"
@@ -269,15 +295,29 @@ export const Component = () => {
 
         {/* Loading spinner at the bottom of the sidebar */}
         <div className="shrink-0">
-          <div className={cn(
-            "flex flex-col items-center pb-4 pt-2",
-            isCollapsed ? "space-y-1" : "space-y-2"
-          )}>
-            <LoadingSpinner size={isCollapsed ? "sm" : "lg"} />
+          <div
+            className={cn(
+              "flex flex-col items-center pb-4 pt-2",
+              isCollapsed ? "space-y-1" : "space-y-2",
+            )}
+          >
+            <LoadingSpinner
+              size={isCollapsed ? "sm" : "lg"}
+              useFrostSidebarLogo={isFrost}
+            />
             {!isCollapsed && (
               <>
-                <div>SpeakMCP</div>
-                <div className="text-xs">{process.env.APP_VERSION}</div>
+                <div className={cn(isFrost && "frost-sidebar-footer-badge")}>
+                  SpeakMCP
+                </div>
+                <div
+                  className={cn(
+                    "text-xs",
+                    isFrost && "frost-sidebar-footer-version",
+                  )}
+                >
+                  {process.env.APP_VERSION}
+                </div>
               </>
             )}
           </div>
@@ -289,7 +329,7 @@ export const Component = () => {
             className={cn(
               "absolute right-0 top-0 h-full w-1 cursor-col-resize transition-colors",
               "hover:bg-primary/20",
-              isResizing && "bg-primary/30"
+              isResizing && "bg-primary/30",
             )}
             onMouseDown={handleResizeStart}
             title="Drag to resize sidebar"
@@ -298,7 +338,7 @@ export const Component = () => {
       </div>
 
       {/* Main content area */}
-      <div className="flex min-w-0 grow flex-col bg-background">
+      <div className="bg-background flex min-w-0 grow flex-col">
         {/* Draggable top bar for Mac - allows window dragging while content scrolls */}
         {process.env.IS_MAC && <SettingsDragBar />}
 

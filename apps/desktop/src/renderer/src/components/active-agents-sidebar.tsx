@@ -331,10 +331,10 @@ export function ActiveAgentsSidebar() {
   }
 
   return (
-    <div className="px-2 pb-2">
+    <div className="active-agents-sidebar-root px-2 pb-2">
       <div
         className={cn(
-          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
+          "active-agents-sidebar-wrapper active-agents-sidebar-header flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
           "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
         )}
       >
@@ -365,7 +365,7 @@ export function ActiveAgentsSidebar() {
       </div>
 
       {isExpanded && (
-        <div className="mt-1 space-y-0.5 pl-2">
+        <div className="active-agents-sidebar-wrapper mt-1 space-y-0.5 pl-2">
           {activeSessions.map((session) => {
             const isFocused = focusedSessionId === session.id
             const sessionProgress = agentProgressById.get(session.id)
@@ -433,7 +433,7 @@ export function ActiveAgentsSidebar() {
       )}
 
       {isExpanded && hasRecentSessions && (
-        <div className="mt-1 space-y-0.5 pl-2">
+        <div className="active-agents-sidebar-wrapper mt-1 space-y-0.5 pl-2">
           {recentSessions.map((session) => {
             // Status colors: red for error/stopped, gray for completed
             const statusDotColor = session.status === "error" || session.status === "stopped"
@@ -464,10 +464,10 @@ export function ActiveAgentsSidebar() {
       )}
 
       {/* Past Sessions Section */}
-      <div className="mt-3 pt-2">
+      <div className="active-agents-sidebar-wrapper active-agents-sidebar-past mt-3 pt-2">
         <div
           className={cn(
-            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
+            "active-agents-sidebar-past-header flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-all duration-200",
             "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
           )}
         >
@@ -521,7 +521,7 @@ export function ActiveAgentsSidebar() {
         </div>
 
         {isPastSessionsExpanded && (
-          <div className="mt-1 space-y-0.5 pl-2">
+          <div className="active-agents-sidebar-wrapper mt-1 space-y-0.5 pl-2">
             <div className="px-2 pb-2">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
@@ -617,4 +617,3 @@ export function ActiveAgentsSidebar() {
     </div>
   )
 }
-

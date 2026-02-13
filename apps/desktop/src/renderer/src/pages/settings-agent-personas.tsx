@@ -10,6 +10,7 @@ import { Badge } from "@renderer/components/ui/badge"
 import { Trash2, Plus, Edit2, Save, X } from "lucide-react"
 import { tipcClient } from "@renderer/lib/tipc-client"
 import { AgentProfile, AgentProfileConnectionType, AgentProfileConnection, AgentProfileRole } from "../../../shared/types"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 type ConnectionType = AgentProfileConnectionType
 
@@ -368,7 +369,7 @@ export function SettingsAgentPersonas() {
   }
 
   return (
-    <div className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full overflow-y-auto overflow-x-hidden px-6 py-4">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Agent Personas</h1>
@@ -383,7 +384,7 @@ export function SettingsAgentPersonas() {
       </div>
 
       {editing ? renderEditForm() : renderProfileList(agentPersonas)}
-    </div>
+    </SettingsPageShell>
   )
 }
 

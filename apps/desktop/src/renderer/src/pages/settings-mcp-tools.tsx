@@ -4,6 +4,7 @@ import { tipcClient } from "@renderer/lib/tipc-client"
 import { Config, MCPConfig } from "@shared/types"
 import { MCPConfigManager } from "@renderer/components/mcp-config-manager"
 import { ProfileBadge } from "@renderer/components/profile-badge"
+import { SettingsPageShell } from "@renderer/components/settings-page-shell"
 
 /**
  * Normalizes a collapsed servers value from persisted config.
@@ -54,7 +55,7 @@ export function Component() {
   }
 
   return (
-    <div className="modern-panel h-full min-w-0 overflow-y-auto overflow-x-hidden px-6 py-4">
+    <SettingsPageShell className="modern-panel h-full min-w-0 overflow-y-auto overflow-x-hidden px-6 py-4">
       <div className="min-w-0 space-y-8">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
@@ -74,6 +75,6 @@ export function Component() {
           />
         </div>
       </div>
-    </div>
+    </SettingsPageShell>
   )
 }

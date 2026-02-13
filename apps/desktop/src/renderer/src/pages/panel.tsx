@@ -781,7 +781,7 @@ export function Component() {
       minWidth={200}
       minHeight={minHeight}
       className={cn(
-        "floating-panel modern-text-strong flex h-screen flex-col text-foreground",
+        "floating-panel frost-edge-glow modern-text-strong flex h-screen flex-col rounded-2xl overflow-hidden text-foreground",
         isDark ? "dark" : ""
       )}
     >
@@ -850,9 +850,9 @@ export function Component() {
                             <div
                               key={index}
                               className={cn(
-                                "h-full w-0.5 shrink-0 rounded-lg",
+                                "panel-waveform-bar h-full w-0.5 shrink-0 rounded-lg",
                                 "bg-red-500 dark:bg-white",
-                                rms === -1000 && "bg-neutral-400 dark:bg-neutral-500",
+                                rms === -1000 && "panel-waveform-bar-idle bg-neutral-400 dark:bg-neutral-500",
                               )}
                               style={{
                                 height: `${Math.min(100, Math.max(16, rms * 100))}%`,
