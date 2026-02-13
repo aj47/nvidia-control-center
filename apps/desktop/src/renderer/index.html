@@ -21,11 +21,14 @@
 
       function getThemePreference() {
         try {
+          // Try to get theme preference from config
           const configData = localStorage.getItem("theme-preference")
           if (configData && ["light", "dark", "frost", "system"].includes(configData)) {
             return configData
           }
-        } catch (e) {}
+        } catch (e) {
+          // Fallback to system preference
+        }
         return "system"
       }
 
@@ -36,9 +39,13 @@
         return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
       }
 
-      function applyTheme(themePreference) {
+      function applyTheme(themePreference = null) {
         const preference = themePreference || getThemePreference()
         applyThemeClass(resolveTheme(preference))
+      }
+
+      function initThemeClass() {
+        applyTheme()
       }
 
       // Listen for system theme changes only if using system preference
@@ -58,7 +65,7 @@
         applyTheme(newPreference)
       })
 
-      applyTheme()
+      initThemeClass()
     </script>
   </head>
 

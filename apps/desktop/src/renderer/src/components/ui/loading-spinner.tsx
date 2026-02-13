@@ -18,6 +18,8 @@ const sizeClasses = {
   lg: "w-12 h-12",
 }
 
+
+
 export function LoadingSpinner({
   className,
   size = "md",
@@ -57,7 +59,7 @@ export function LoadingSpinner({
           />
         )}
         {showText && (
-          <span className="text-muted-foreground text-sm">{text}</span>
+          <span className="text-sm text-muted-foreground">{text}</span>
         )}
       </div>
     </div>

@@ -46,7 +46,7 @@ const Input = React.forwardRef<
   return (
     <div
       className={cn(
-        "inline-flex h-7 w-full items-center rounded-md border border-input bg-background px-2 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-within:border-ring focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/60 focus-within:ring-offset-2 focus-within:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-7 w-full items-center rounded-md border border-input bg-background px-2 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-within:border-ring focus-within:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
         wrapperClassName,
       )}
     >
