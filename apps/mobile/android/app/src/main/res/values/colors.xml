@@ -1,7 +1,7 @@
 <resources>
-  <color name="splashscreen_background">#ffffff</color>
-  <color name="iconBackground">#ffffff</color>
-  <color name="colorPrimary">#023c69</color>
-  <color name="colorPrimaryDark">#ffffff</color>
-  <color name="notification_icon_color">#ffffff</color>
+  <color name="splashscreen_background">#070908</color>
+  <color name="iconBackground">#0D130E</color>
+  <color name="colorPrimary">#76B900</color>
+  <color name="colorPrimaryDark">#070908</color>
+  <color name="notification_icon_color">#76B900</color>
 </resources>

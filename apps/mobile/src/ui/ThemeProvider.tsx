@@ -1,23 +1,25 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { Appearance, ColorSchemeName, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { lightTheme, darkTheme, Theme } from './theme';
+import { lightTheme, darkTheme, frostTheme, Theme } from './theme';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system' | 'frost';
 
 const THEME_STORAGE_KEY = 'nvidia-cc-theme-preference';
 
 interface ThemeContextType {
   /** Current theme object with colors, spacing, etc. */
   theme: Theme;
-  /** Current resolved theme name (always "light" or "dark") */
-  colorScheme: 'light' | 'dark';
+  /** Current resolved theme name */
+  colorScheme: 'light' | 'dark' | 'frost';
   /** User's theme preference setting */
   themeMode: ThemeMode;
-  /** Whether the current theme is dark */
+  /** Whether the current theme is dark (includes frost) */
   isDark: boolean;
   /** Whether the current theme is light */
   isLight: boolean;
+  /** Whether the current theme is frost (NVIDIA green mode) */
+  isFrost: boolean;
   /** Set the theme preference */
   setThemeMode: (mode: ThemeMode) => void;
   /** Toggle between light and dark (ignores system preference) */
@@ -40,7 +42,7 @@ export function ThemeProvider({ children, initialMode = 'system' }: ThemeProvide
   useEffect(() => {
     AsyncStorage.getItem(THEME_STORAGE_KEY)
       .then((stored) => {
-        if (stored && ['light', 'dark', 'system'].includes(stored)) {
+        if (stored && ['light', 'dark', 'system', 'frost'].includes(stored)) {
           setThemeModeState(stored as ThemeMode);
         }
       })
@@ -51,12 +53,15 @@ export function ThemeProvider({ children, initialMode = 'system' }: ThemeProvide
   }, []);
 
   // Resolve the actual color scheme based on themeMode and system preference
-  const resolvedColorScheme: 'light' | 'dark' = 
-    themeMode === 'system' 
+  const resolvedColorScheme: 'light' | 'dark' | 'frost' =
+    themeMode === 'frost' ? 'frost' :
+    themeMode === 'system'
       ? (systemColorScheme === 'dark' ? 'dark' : 'light')
       : themeMode;
 
-  const currentTheme = resolvedColorScheme === 'dark' ? darkTheme : lightTheme;
+  const currentTheme =
+    resolvedColorScheme === 'frost' ? frostTheme :
+    resolvedColorScheme === 'dark' ? darkTheme : lightTheme;
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
@@ -71,8 +76,9 @@ export function ThemeProvider({ children, initialMode = 'system' }: ThemeProvide
     theme: currentTheme,
     colorScheme: resolvedColorScheme,
     themeMode,
-    isDark: resolvedColorScheme === 'dark',
+    isDark: resolvedColorScheme === 'dark' || resolvedColorScheme === 'frost',
     isLight: resolvedColorScheme === 'light',
+    isFrost: resolvedColorScheme === 'frost',
     setThemeMode,
     toggleTheme,
   };

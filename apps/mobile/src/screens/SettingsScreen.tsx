@@ -36,6 +36,7 @@ const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
   { label: '☀️ Light', value: 'light' },
   { label: '🌙 Dark', value: 'dark' },
   { label: '⚙️ System', value: 'system' },
+  { label: '❄️ Frost', value: 'frost' },
 ];
 
 export default function SettingsScreen({ navigation }: any) {

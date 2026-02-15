@@ -27,6 +27,16 @@ config.resolver.unstable_enablePackageExports = true;
 // 5. Resolve symlinks to real paths for pnpm compatibility
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // On web, stub out expo-notifications since it's a native-only module.
+  // This prevents its Node.js polyfill dependencies (assert -> call-bind) from
+  // breaking the Metro web bundle.
+  if (platform === 'web' && (
+    moduleName === 'expo-notifications' ||
+    moduleName.startsWith('expo-notifications/')
+  )) {
+    return { type: 'empty' };
+  }
+
   // Try default resolution first
   if (originalResolveRequest) {
     try {

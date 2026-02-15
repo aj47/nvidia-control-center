@@ -73,6 +73,39 @@ export const darkColors = {
 } as const;
 
 /**
+ * NVIDIA Frost mode color palette
+ * Deep noir backgrounds with NVIDIA green (#76B900) accents.
+ * Matches the desktop frost theme in tailwind.css (.frost class).
+ */
+export const frostColors = {
+  background: '#070908',         // --background: 114 12% 4% (deep noir)
+  foreground: '#DEF4D7',         // --foreground: 102 26% 92% (soft green-white)
+  card: '#0D130E',               // --card: slightly lighter than bg
+  cardForeground: '#DEF4D7',     // --card-foreground
+  popover: '#0D130E',            // --popover
+  popoverForeground: '#DEF4D7',  // --popover-foreground
+  primary: '#76B900',            // --primary: NVIDIA green
+  primaryForeground: '#0D1A08',  // --primary-foreground: dark green text on primary
+  secondary: '#111F12',          // --secondary: dark green panel
+  secondaryForeground: '#DEF4D7', // --secondary-foreground
+  muted: '#111F12',              // --muted
+  mutedForeground: '#7DAB6A',    // --muted-foreground: muted green
+  accent: '#111F12',             // --accent
+  accentForeground: '#DEF4D7',   // --accent-foreground
+  destructive: '#FF6680',        // --destructive: red-pink for errors
+  destructiveForeground: '#DEF4D7', // --destructive-foreground
+  border: '#1E3B1F',             // --border: dark green border
+  input: '#162617',              // --input: dark green input bg
+  ring: '#76B900',               // --ring: NVIDIA green focus ring
+  success: '#76B900',            // NVIDIA green for success states
+  successForeground: '#0D1A08',  // dark text on success
+  warning: '#f59e0b',            // amber - works on dark bg
+  warningForeground: '#000000',  // black text on warning
+  info: '#A6FF00',               // accent green for info
+  infoForeground: '#070908',     // dark text on info
+} as const;
+
+/**
  * Type for color palette keys
  */
 export type ColorKey = keyof typeof lightColors;

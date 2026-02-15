@@ -19,15 +19,18 @@ const PUSH_TOKEN_KEY = 'push_token_v2';
 const SERVER_REGISTERED_KEY = 'push_server_registered_v2';
 
 // Configure how notifications are handled when the app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// (Not supported on web - expo-notifications is a native-only module)
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export interface NotificationData {
   type?: 'message' | 'system';
@@ -194,6 +197,7 @@ export async function isRegisteredWithServer(): Promise<boolean> {
  * Clear all notifications and badge (call when app opens)
  */
 export async function clearNotifications(): Promise<void> {
+  if (Platform.OS === 'web') return;
   await Notifications.dismissAllNotificationsAsync();
   await Notifications.setBadgeCountAsync(0);
 }
@@ -252,19 +256,23 @@ export function usePushNotifications(): UsePushNotificationsResult {
   // Initialize state
   useEffect(() => {
     async function init() {
-      const { status } = await Notifications.getPermissionsAsync();
-      setPermissionStatus(status);
+      if (Platform.OS !== 'web') {
+        const { status } = await Notifications.getPermissionsAsync();
+        setPermissionStatus(status);
+      }
 
       const registered = await isRegisteredWithServer();
       setIsRegistered(registered);
 
       setIsLoading(false);
 
-      // Check if app was opened via notification tap
-      const lastResponse = await Notifications.getLastNotificationResponseAsync();
-      if (lastResponse) {
-        const data = lastResponse.notification.request.content.data as NotificationData;
-        if (data) pendingDataRef.current = data;
+      if (Platform.OS !== 'web') {
+        // Check if app was opened via notification tap
+        const lastResponse = await Notifications.getLastNotificationResponseAsync();
+        if (lastResponse) {
+          const data = lastResponse.notification.request.content.data as NotificationData;
+          if (data) pendingDataRef.current = data;
+        }
       }
     }
     init();
@@ -279,8 +287,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
     }
   });
 
-  // Set up notification tap listener
+  // Set up notification tap listener (native only)
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as NotificationData;
       if (data && onTapRef.current) {
@@ -295,8 +304,10 @@ export function usePushNotifications(): UsePushNotificationsResult {
     const success = await registerWithServer(baseUrl, apiKey);
     if (success) {
       setIsRegistered(true);
-      const { status } = await Notifications.getPermissionsAsync();
-      setPermissionStatus(status);
+      if (Platform.OS !== 'web') {
+        const { status } = await Notifications.getPermissionsAsync();
+        setPermissionStatus(status);
+      }
     }
     setIsLoading(false);
     return success;

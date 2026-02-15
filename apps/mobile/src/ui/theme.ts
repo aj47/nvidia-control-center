@@ -2,6 +2,7 @@ import { Platform, Appearance } from 'react-native';
 import {
   lightColors as sharedLightColors,
   darkColors as sharedDarkColors,
+  frostColors as sharedFrostColors,
   spacing,
   radius,
   typography as sharedTypography,
@@ -32,6 +33,16 @@ const darkColors = {
   textSecondary: sharedDarkColors.mutedForeground,
 };
 
+const frostColors = {
+  ...sharedFrostColors,
+  // Legacy aliases for backward compatibility
+  surface: sharedFrostColors.card,
+  text: sharedFrostColors.foreground,
+  danger: sharedFrostColors.destructive,
+  primarySoft: sharedFrostColors.secondary,
+  textSecondary: sharedFrostColors.mutedForeground,
+};
+
 export type ThemeColors = typeof lightColors;
 
 // Typography - base styles without color (color added dynamically)
@@ -45,8 +56,11 @@ export const typographyBase = {
 } as const;
 
 // Create a theme object with colors for a specific color scheme
-function createTheme(colorScheme: 'light' | 'dark') {
-  const colors = colorScheme === 'dark' ? darkColors : lightColors;
+function createTheme(colorScheme: 'light' | 'dark' | 'frost') {
+  const colors =
+    colorScheme === 'frost' ? frostColors :
+    colorScheme === 'dark' ? darkColors : lightColors;
+  const isDark = colorScheme === 'dark' || colorScheme === 'frost';
 
   return {
     colors,
@@ -67,11 +81,11 @@ function createTheme(colorScheme: 'light' | 'dark') {
       borderWidth: 1,
       borderColor: colors.border,
       padding: spacing.md,
-      shadowColor: '#000',
-      shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
-      shadowRadius: 12,
+      shadowColor: colorScheme === 'frost' ? '#76B900' : '#000',
+      shadowOpacity: isDark ? 0.3 : 0.1,
+      shadowRadius: colorScheme === 'frost' ? 16 : 12,
       shadowOffset: { width: 0, height: 4 },
-      elevation: colorScheme === 'dark' ? 3 : 1,
+      elevation: isDark ? 3 : 1,
     },
     input: {
       borderWidth: 1,
@@ -88,13 +102,14 @@ function createTheme(colorScheme: 'light' | 'dark') {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#000',
-      shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.1,
-      shadowRadius: 12,
+      shadowColor: colorScheme === 'frost' ? '#76B900' : '#000',
+      shadowOpacity: isDark ? 0.3 : 0.1,
+      shadowRadius: colorScheme === 'frost' ? 16 : 12,
       shadowOffset: { width: 0, height: 4 },
-      elevation: colorScheme === 'dark' ? 3 : 1,
+      elevation: isDark ? 3 : 1,
     },
-    isDark: colorScheme === 'dark',
+    isDark,
+    isFrost: colorScheme === 'frost',
   } as const;
 }
 
@@ -104,9 +119,10 @@ function getColorScheme(): 'light' | 'dark' {
   return scheme === 'dark' ? 'dark' : 'light';
 }
 
-// Export themes for both modes
+// Export themes for all modes
 export const lightTheme = createTheme('light');
 export const darkTheme = createTheme('dark');
+export const frostTheme = createTheme('frost');
 
 // Default export - uses system preference (for backward compatibility)
 // Components should prefer using useTheme() hook for reactive updates
