@@ -181,9 +181,14 @@ export function Component() {
         await startNewConversation(transcript, "user")
       }
 
+      // Decode webm audio to raw PCM samples for Parakeet STT
+      const { decodeAudioBlob } = await import("../lib/audio-decoder")
+      const pcmSamples = await decodeAudioBlob(blob, 16000)
+
       await tipcClient.createRecording({
-        recording: await blob.arrayBuffer(),
+        recording: pcmSamples.buffer as ArrayBuffer,
         duration,
+        isDecodedPCM: true,
       })
     },
     onError(error) {
@@ -205,7 +210,9 @@ export function Component() {
       duration: number
       transcript?: string
     }) => {
-      const arrayBuffer = await blob.arrayBuffer()
+      // Decode webm audio to raw PCM samples for Parakeet STT
+      const { decodeAudioBlob } = await import("../lib/audio-decoder")
+      const pcmSamples = await decodeAudioBlob(blob, 16000)
 
       // Use the conversationId and sessionId passed through IPC (from mic button clicks).
       // The refs are more reliable for mic button clicks as they avoid timing issues.
@@ -230,8 +237,9 @@ export function Component() {
       }
 
       const result = await tipcClient.createMcpRecording({
-        recording: arrayBuffer,
+        recording: pcmSamples.buffer as ArrayBuffer,
         duration,
+        isDecodedPCM: true,
         // Pass conversationId and sessionId if user explicitly continued a conversation,
         // otherwise undefined to create a fresh conversation/session.
         conversationId: conversationIdForMcp ?? undefined,

@@ -299,7 +299,10 @@ class OfflineRecognizerWrapper implements SherpaOnnxOfflineRecognizer {
       throw new Error("Native addon not loaded")
     }
     const jsonStr = addon.getOfflineStreamResultAsJson(stream.handle)
-    return JSON.parse(jsonStr)
+    // Sherpa-onnx may return JSON with nan values (from C++/Python) which are not valid JSON
+    // Replace nan with null to make it valid JSON
+    const sanitizedJsonStr = jsonStr.replace(/\bnan\b/gi, "null")
+    return JSON.parse(sanitizedJsonStr)
   }
 }
 

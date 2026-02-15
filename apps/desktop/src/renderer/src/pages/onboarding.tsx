@@ -14,9 +14,10 @@ import { Config } from "@shared/types"
 import { useNavigate } from "react-router-dom"
 import { tipcClient } from "@renderer/lib/tipc-client"
 import { Recorder } from "@renderer/lib/recorder"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { KeyRecorder } from "@renderer/components/key-recorder"
 import { getMcpToolsShortcutDisplay } from "@shared/key-utils"
+import { Download, CheckCircle2, Loader2 } from "lucide-react"
 
 type OnboardingStep = "welcome" | "api-key" | "dictation" | "agent" | "complete"
 
@@ -63,9 +64,13 @@ export function Component() {
   const transcribeMutation = useMutation({
     mutationFn: async ({ blob, duration }: { blob: Blob; duration: number }) => {
       setIsTranscribing(true)
+      // Decode webm audio to raw PCM samples for Parakeet STT
+      const { decodeAudioBlob } = await import("../lib/audio-decoder")
+      const pcmSamples = await decodeAudioBlob(blob, 16000)
       const result = await tipcClient.createRecording({
-        recording: await blob.arrayBuffer(),
+        recording: pcmSamples.buffer as ArrayBuffer,
         duration,
+        isDecodedPCM: true,
       })
       return result
     },
@@ -298,6 +303,106 @@ function ApiKeyStep({
 }
 
 
+// Parakeet Model Download Component for Onboarding
+function ParakeetModelDownloadOnboarding({ onModelReady }: { onModelReady?: () => void }) {
+  const queryClient = useQueryClient()
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const modelStatusQuery = useQuery({
+    queryKey: ["parakeetModelStatus"],
+    queryFn: () => window.electron.ipcRenderer.invoke("getParakeetModelStatus"),
+    refetchInterval: (query) => {
+      const status = query.state.data as { downloading?: boolean } | undefined
+      return (isDownloading || status?.downloading) ? 500 : false
+    },
+  })
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    try {
+      await window.electron.ipcRenderer.invoke("downloadParakeetModel")
+      onModelReady?.()
+    } catch (error) {
+      console.error("Failed to download Parakeet model:", error)
+    } finally {
+      setIsDownloading(false)
+      queryClient.invalidateQueries({ queryKey: ["parakeetModelStatus"] })
+    }
+  }
+
+  const status = modelStatusQuery.data as { downloaded: boolean; downloading: boolean; progress: number; error?: string } | undefined
+
+  if (modelStatusQuery.isLoading) {
+    return (
+      <div className="p-4 rounded-lg border bg-muted/30 text-center">
+        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Checking model status...</span>
+      </div>
+    )
+  }
+
+  if (status?.downloaded) {
+    return (
+      <div className="p-4 rounded-lg border border-green-500/30 bg-green-500/10 flex items-center justify-center gap-2">
+        <CheckCircle2 className="h-5 w-5 text-green-600" />
+        <span className="text-sm font-medium text-green-600">Parakeet STT Model Ready</span>
+      </div>
+    )
+  }
+
+  if (status?.downloading || isDownloading) {
+    const progress = status?.progress ?? 0
+    return (
+      <div className="p-4 rounded-lg border bg-muted/30">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm font-medium">Downloading Parakeet Model...</span>
+        </div>
+        <div className="text-xs text-muted-foreground text-center mb-2">
+          {Math.round(progress * 100)}% complete
+        </div>
+        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-200"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          This may take a few minutes (~200MB)
+        </p>
+      </div>
+    )
+  }
+
+  if (status?.error) {
+    return (
+      <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/10">
+        <p className="text-sm text-destructive mb-3">{status.error}</p>
+        <Button size="sm" variant="outline" onClick={handleDownload} className="w-full">
+          <Download className="h-4 w-4 mr-2" />
+          Retry Download
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 rounded-lg border bg-muted/30">
+      <div className="text-center mb-3">
+        <span className="i-mingcute-download-2-fill text-2xl text-primary mb-2 block"></span>
+        <p className="text-sm font-medium">Download Speech-to-Text Model</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Parakeet runs locally on your device for private, fast transcription
+        </p>
+      </div>
+      <Button onClick={handleDownload} className="w-full">
+        <Download className="h-4 w-4 mr-2" />
+        Download Model (~200MB)
+      </Button>
+    </div>
+  )
+}
+
 // Dictation Step
 function DictationStep({
   isRecording,
@@ -326,6 +431,14 @@ function DictationStep({
   transcriptionError: string | null
   micError: string | null
 }) {
+  const queryClient = useQueryClient()
+  const modelStatusQuery = useQuery({
+    queryKey: ["parakeetModelStatus"],
+    queryFn: () => window.electron.ipcRenderer.invoke("getParakeetModelStatus"),
+  })
+  const status = modelStatusQuery.data as { downloaded: boolean } | undefined
+  const isModelReady = status?.downloaded ?? false
+
   const shortcut = config?.shortcut || "hold-ctrl"
 
   const getShortcutDisplay = () => {
@@ -420,57 +533,68 @@ function DictationStep({
         </div>
       </div>
 
-      {/* Recording Button and Result */}
-      <div className="flex flex-col items-center gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Button
-              size="lg"
-              variant={isRecording ? "destructive" : "default"}
-              onClick={isRecording ? onStopRecording : onStartRecording}
-              disabled={isTranscribing}
-              className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1"
-            >
-              <span className={`text-2xl ${buttonContent.icon}`}></span>
-              <span className="text-xs">{buttonContent.text}</span>
-            </Button>
-            {isRecording && (
-              <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-ping pointer-events-none"></div>
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium">Or use your hotkey:</p>
-            <p className="text-primary font-semibold">{getShortcutDisplay()}</p>
-          </div>
-        </div>
-
-        {/* Transcription Result Textarea */}
-        <div className="w-full">
-          <label className="block text-sm font-medium mb-2">Transcription Result</label>
-          <Textarea
-            value={dictationResult || ""}
-            onChange={(e) => onDictationResultChange(e.target.value || null)}
-            placeholder={isRecording ? "Listening..." : isTranscribing ? "Transcribing..." : "Your transcribed text will appear here..."}
-            className="min-h-[100px] resize-none"
-            readOnly={isRecording || isTranscribing}
+      {/* Parakeet Model Download - show if model not ready */}
+      {!isModelReady && (
+        <div className="mb-6">
+          <ParakeetModelDownloadOnboarding
+            onModelReady={() => queryClient.invalidateQueries({ queryKey: ["parakeetModelStatus"] })}
           />
         </div>
+      )}
 
-        {/* Error Messages */}
-        {micError && (
-          <div className="w-full p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400">
-            <span className="i-mingcute-warning-fill mr-2"></span>
-            {micError}
+      {/* Recording Button and Result - only show if model is ready */}
+      {isModelReady && (
+        <div className="flex flex-col items-center gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Button
+                size="lg"
+                variant={isRecording ? "destructive" : "default"}
+                onClick={isRecording ? onStopRecording : onStartRecording}
+                disabled={isTranscribing}
+                className="w-20 h-20 rounded-full flex flex-col items-center justify-center gap-1"
+              >
+                <span className={`text-2xl ${buttonContent.icon}`}></span>
+                <span className="text-xs">{buttonContent.text}</span>
+              </Button>
+              {isRecording && (
+                <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-ping pointer-events-none"></div>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium">Or use your hotkey:</p>
+              <p className="text-primary font-semibold">{getShortcutDisplay()}</p>
+            </div>
           </div>
-        )}
 
-        {transcriptionError && (
-          <div className="w-full p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400">
-            <span className="i-mingcute-warning-fill mr-2"></span>
-            {transcriptionError}
+          {/* Transcription Result Textarea */}
+          <div className="w-full">
+            <label className="block text-sm font-medium mb-2">Transcription Result</label>
+            <Textarea
+              value={dictationResult || ""}
+              onChange={(e) => onDictationResultChange(e.target.value || null)}
+              placeholder={isRecording ? "Listening..." : isTranscribing ? "Transcribing..." : "Your transcribed text will appear here..."}
+              className="min-h-[100px] resize-none"
+              readOnly={isRecording || isTranscribing}
+            />
           </div>
-        )}
-      </div>
+
+          {/* Error Messages */}
+          {micError && (
+            <div className="w-full p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400">
+              <span className="i-mingcute-warning-fill mr-2"></span>
+              {micError}
+            </div>
+          )}
+
+          {transcriptionError && (
+            <div className="w-full p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400">
+              <span className="i-mingcute-warning-fill mr-2"></span>
+              {transcriptionError}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack} disabled={isRecording || isTranscribing}>

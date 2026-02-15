@@ -1119,6 +1119,7 @@ export const router = {
     .input<{
       recording: ArrayBuffer
       duration: number
+      isDecodedPCM?: boolean // When true, recording contains raw PCM Float32 samples
     }>()
     .action(async ({ input }) => {
       fs.mkdirSync(recordingsFolder, { recursive: true })
@@ -1134,10 +1135,8 @@ export const router = {
       // Initialize recognizer if needed
       await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-      // TODO: Audio format conversion needed
-      // The input is webm ArrayBuffer from MediaRecorder
-      // Parakeet expects Float32Array samples at 16kHz mono
-      // For now, this will not work correctly until audio conversion is added
+      // Audio is now decoded to raw PCM Float32 samples by the renderer
+      // using Web Audio API before being sent via IPC
       transcript = await parakeetStt.transcribe(input.recording, 16000)
       transcript = await postProcessTranscript(transcript)
 
@@ -1349,6 +1348,7 @@ export const router = {
     .input<{
       recording: ArrayBuffer
       duration: number
+      isDecodedPCM?: boolean // When true, recording contains raw PCM Float32 samples
       conversationId?: string
       sessionId?: string
       fromTile?: boolean // When true, session runs in background (snoozed) - panel won't show
@@ -1376,15 +1376,14 @@ export const router = {
 
             await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-            // TODO: Audio format conversion needed
-            // The input is webm ArrayBuffer from MediaRecorder
-            // Parakeet expects Float32Array samples at 16kHz mono
+            // Audio is now decoded to raw PCM Float32 samples by the renderer
+            // using Web Audio API before being sent via IPC
             transcript = await parakeetStt.transcribe(input.recording, 16000)
 
-            // Save the recording file
+            // Save the recording file (save as .pcm since it's decoded PCM now)
             const recordingId = Date.now().toString()
             fs.writeFileSync(
-              path.join(recordingsFolder, `${recordingId}.webm`),
+              path.join(recordingsFolder, `${recordingId}.pcm`),
               Buffer.from(input.recording),
             )
 
@@ -1511,9 +1510,8 @@ export const router = {
 
         await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-        // TODO: Audio format conversion needed
-        // The input is webm ArrayBuffer from MediaRecorder
-        // Parakeet expects Float32Array samples at 16kHz mono
+        // Audio is now decoded to raw PCM Float32 samples by the renderer
+        // using Web Audio API before being sent via IPC
         transcript = await parakeetStt.transcribe(input.recording, 16000)
 
       // Create or continue conversation

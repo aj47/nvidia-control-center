@@ -1,7 +1,5 @@
 import { cn } from "@renderer/lib/utils"
-import loadingSpinnerGif from "@renderer/assets/loading-spinner.gif"
-import lightSpinnerGif from "@renderer/assets/light-spinner.gif"
-import frostLogoGlobePng from "@renderer/assets/frost-logo-globe.png"
+import nvidiaLogo from "@renderer/assets/nvidia-cc-icon.png"
 import { useTheme } from "@renderer/contexts/theme-context"
 
 interface LoadingSpinnerProps {
@@ -18,46 +16,26 @@ const sizeClasses = {
   lg: "w-12 h-12",
 }
 
-
-
 export function LoadingSpinner({
   className,
   size = "md",
   showText = false,
   text = "Loading...",
-  useFrostSidebarLogo = false,
 }: LoadingSpinnerProps) {
-  const { isDark, isFrost } = useTheme()
-  const showFrostSidebarLogo = useFrostSidebarLogo && isFrost
-  const spinnerSrc = showFrostSidebarLogo
-    ? frostLogoGlobePng
-    : isDark
-      ? loadingSpinnerGif
-      : lightSpinnerGif
+  const { isDark } = useTheme()
   const spinnerImageClassName = cn(
     sizeClasses[size],
-    "object-contain",
-    isFrost && "frost-gif-spinner-logo",
+    "object-contain animate-pulse",
   )
 
   return (
     <div className={cn("flex items-center justify-center", className)}>
       <div className="flex items-center gap-2">
-        {showFrostSidebarLogo ? (
-          <div className={cn(sizeClasses[size], "frost-sidebar-spinner-frame")}>
-            <img
-              src={spinnerSrc}
-              alt="Loading..."
-              className="frost-sidebar-spinner-logo"
-            />
-          </div>
-        ) : (
-          <img
-            src={spinnerSrc}
-            alt="Loading..."
-            className={spinnerImageClassName}
-          />
-        )}
+        <img
+          src={nvidiaLogo}
+          alt="Loading..."
+          className={spinnerImageClassName}
+        />
         {showText && (
           <span className="text-sm text-muted-foreground">{text}</span>
         )}
