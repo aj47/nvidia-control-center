@@ -107,7 +107,10 @@ export function PanelDragBar({
       )}
       onMouseDown={handleMouseDown}
       style={{
-        WebkitAppRegion: disabled ? "no-drag" : "drag",
+        // Always use no-drag so native OS drag doesn't intercept mouse events.
+        // The custom JS drag (onMouseDown + IPC) handles movement instead,
+        // which works even when the panel window is non-focusable on macOS.
+        WebkitAppRegion: "no-drag",
         userSelect: "none",
       } as any}
     >
