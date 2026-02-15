@@ -2,38 +2,30 @@
  * LLM-driven TTS text preprocessing
  * Uses an LLM to intelligently convert text to speech-friendly format
  * for more natural and context-aware speech output.
+ *
+ * NOTE: TTS is disabled after refactoring to only support Nemotron + Parakeet.
+ * These functions are kept for potential future use.
  */
 
 import { makeTextCompletionWithFetch } from "./llm-fetch"
 import { configStore } from "./config"
-import { Config } from "@shared/types"
 import { diagnosticsService } from "./diagnostics"
-import { preprocessTextForTTS as regexPreprocessTextForTTS } from "@speakmcp/shared"
+import { preprocessTextForTTS as regexPreprocessTextForTTS } from "@nvidia-cc/shared"
 
 /**
- * Builds a dynamic TTS preprocessing prompt based on user config settings.
- * Respects ttsRemoveCodeBlocks, ttsRemoveUrls, and ttsConvertMarkdown settings.
+ * Builds a TTS preprocessing prompt with default settings.
  */
-function buildTTSPreprocessingPrompt(config: Config): string {
-  const instructions: string[] = []
-
-  // Only add instructions for enabled options
-  if (config.ttsRemoveCodeBlocks ?? true) {
-    instructions.push("- Remove code blocks and replace with brief description if relevant")
-  }
-  if (config.ttsRemoveUrls ?? true) {
-    instructions.push("- Remove URLs but mention if a link was shared")
-  }
-  if (config.ttsConvertMarkdown ?? true) {
-    instructions.push("- Convert markdown formatting to natural speech")
-  }
-
-  // Always include these LLM-specific enhancements (the main value of LLM preprocessing)
-  instructions.push("- Expand abbreviations and acronyms appropriately (e.g., \"Dr.\" → \"Doctor\", \"API\" → \"A P I\")")
-  instructions.push("- Convert technical symbols to spoken words (e.g., \"&&\" → \"and\", \"=>\" → \"arrow\")")
-  instructions.push("- Remove or describe any content that wouldn't make sense when spoken aloud")
-  instructions.push("- Keep the core meaning but optimize for listening")
-  instructions.push("- Do NOT add any commentary, just output the converted text")
+function buildTTSPreprocessingPrompt(): string {
+  const instructions: string[] = [
+    "- Remove code blocks and replace with brief description if relevant",
+    "- Remove URLs but mention if a link was shared",
+    "- Convert markdown formatting to natural speech",
+    "- Expand abbreviations and acronyms appropriately (e.g., \"Dr.\" → \"Doctor\", \"API\" → \"A P I\")",
+    "- Convert technical symbols to spoken words (e.g., \"&&\" → \"and\", \"=>\" → \"arrow\")",
+    "- Remove or describe any content that wouldn't make sense when spoken aloud",
+    "- Keep the core meaning but optimize for listening",
+    "- Do NOT add any commentary, just output the converted text",
+  ]
 
   return `Convert this AI response to natural spoken text.
 ${instructions.join("\n")}
@@ -47,7 +39,7 @@ Text to convert:
 /**
  * Preprocesses text for TTS using an LLM for more natural speech output.
  * Falls back to regex-based preprocessing if LLM call fails.
- * 
+ *
  * @param text The raw text to preprocess for TTS
  * @param providerId Optional provider ID for the LLM call
  * @returns Preprocessed text suitable for TTS
@@ -57,17 +49,17 @@ export async function preprocessTextForTTSWithLLM(
   providerId?: string
 ): Promise<string> {
   const config = configStore.get()
-  
-  // Use the configured TTS LLM provider, or fall back to transcript post-processing provider, or openai
-  const llmProviderId = providerId || config.ttsLLMPreprocessingProviderId || config.transcriptPostProcessingProviderId || "openai"
-  
+
+  // Use Nemotron for LLM preprocessing (the only available provider)
+  const llmProviderId = providerId || config.transcriptPostProcessingProviderId || "nemotron"
+
   try {
-    // Build the dynamic prompt based on user config, then append the text
-    const prompt = buildTTSPreprocessingPrompt(config) + text
+    // Build the prompt with default settings, then append the text
+    const prompt = buildTTSPreprocessingPrompt() + text
 
     // Make the LLM call
     const result = await makeTextCompletionWithFetch(prompt, llmProviderId)
-    
+
     // If we got a result, return it
     if (result && result.trim().length > 0) {
       diagnosticsService.logInfo("tts-llm-preprocessing", "LLM preprocessing succeeded", {
@@ -77,7 +69,7 @@ export async function preprocessTextForTTSWithLLM(
       })
       return result.trim()
     }
-    
+
     // If empty result, fall back to regex
     throw new Error("LLM returned empty result")
   } catch (error) {
@@ -88,40 +80,23 @@ export async function preprocessTextForTTSWithLLM(
       error
     )
 
-    // Fall back to regex-based preprocessing with user-configured options
+    // Fall back to regex-based preprocessing with default options
     const preprocessingOptions = {
-      removeCodeBlocks: config.ttsRemoveCodeBlocks ?? true,
-      removeUrls: config.ttsRemoveUrls ?? true,
-      convertMarkdown: config.ttsConvertMarkdown ?? true,
+      removeCodeBlocks: true,
+      removeUrls: true,
+      convertMarkdown: true,
     }
     return regexPreprocessTextForTTS(text, preprocessingOptions)
   }
 }
 
 /**
- * Checks if LLM-based TTS preprocessing is enabled and available.
- * Returns true if the feature is enabled and API keys are configured.
+ * Checks if LLM-based TTS preprocessing is available.
+ * Returns true if Nemotron API key is configured.
+ * NOTE: TTS is currently disabled, this always returns false.
  */
 export function isLLMPreprocessingAvailable(): boolean {
-  const config = configStore.get()
-  
-  if (!config.ttsUseLLMPreprocessing) {
-    return false
-  }
-  
-  // Check if the provider has API keys configured
-  const providerId = config.ttsLLMPreprocessingProviderId || config.transcriptPostProcessingProviderId || "openai"
-  
-  switch (providerId) {
-    case "openai":
-      return !!config.openaiApiKey
-    case "groq":
-      return !!config.groqApiKey
-    case "gemini":
-      return !!config.geminiApiKey
-    default:
-      // For unknown providers, return false rather than assuming OpenAI availability
-      return false
-  }
+  // TTS is disabled - no providers available after refactor
+  return false
 }
 

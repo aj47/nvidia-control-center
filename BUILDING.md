@@ -1,6 +1,6 @@
-# Building SpeakMCP
+# Building NVIDIA Control Center
 
-This guide covers building signed release versions of SpeakMCP for distribution.
+This guide covers building signed release versions of NVIDIA Control Center for distribution.
 
 ## Prerequisites
 
@@ -54,8 +54,8 @@ export APPLE_ID="your@email.com"                  # Your Apple ID email
 export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # From appleid.apple.com
 ```
 
-> **Generating App-Specific Password:** Go to https://appleid.apple.com → Sign In → 
-> App-Specific Passwords → Generate a password for "SpeakMCP Notarization"
+> **Generating App-Specific Password:** Go to https://appleid.apple.com → Sign In →
+> App-Specific Passwords → Generate a password for "NVIDIA Control Center Notarization"
 
 ### Step 3: Build the Rust Binary
 
@@ -79,12 +79,12 @@ npx electron-builder --mac --config electron-builder.config.cjs --publish=never
 ### Step 5: Verify Output
 
 Built artifacts will be in `apps/desktop/dist/`:
-- `SpeakMCP-X.X.X-arm64.dmg` - Apple Silicon DMG
-- `SpeakMCP-X.X.X-x64.dmg` - Intel DMG
-- `SpeakMCP-X.X.X-arm64.zip` - Apple Silicon ZIP (for auto-updates)
-- `SpeakMCP-X.X.X-x64.zip` - Intel ZIP
-- `SpeakMCP-X.X.X-arm64.pkg` - Apple Silicon installer
-- `SpeakMCP-X.X.X-x64.pkg` - Intel installer
+- `NVIDIA-Control-Center-X.X.X-arm64.dmg` - Apple Silicon DMG
+- `NVIDIA-Control-Center-X.X.X-x64.dmg` - Intel DMG
+- `NVIDIA-Control-Center-X.X.X-arm64.zip` - Apple Silicon ZIP (for auto-updates)
+- `NVIDIA-Control-Center-X.X.X-x64.zip` - Intel ZIP
+- `NVIDIA-Control-Center-X.X.X-arm64.pkg` - Apple Silicon installer
+- `NVIDIA-Control-Center-X.X.X-x64.pkg` - Intel installer
 
 ## Quick One-Liner
 

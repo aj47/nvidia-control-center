@@ -95,28 +95,16 @@ export function Component() {
   // Memoize model change handler to prevent infinite re-renders
   const handleTranscriptModelChange = useCallback(
     (value: string) => {
-      const transcriptPostProcessingProviderId =
-        (configQuery.data as any)?.transcriptPostProcessingProviderId || "openai"
-
-      if (transcriptPostProcessingProviderId === "openai") {
-        saveConfig({
-          transcriptPostProcessingOpenaiModel: value,
-        })
-      } else if (transcriptPostProcessingProviderId === "groq") {
-        saveConfig({
-          transcriptPostProcessingGroqModel: value,
-        })
-      } else {
-        saveConfig({
-          transcriptPostProcessingGeminiModel: value,
-        })
-      }
+      // Only Nemotron is available for transcript post-processing
+      saveConfig({
+        transcriptPostProcessingNemotronModel: value,
+      })
     },
-    [saveConfig, (configQuery.data as any)?.transcriptPostProcessingProviderId],
+    [saveConfig],
   )
 
   const sttProviderId: STT_PROVIDER_ID =
-    (configQuery.data as any)?.sttProviderId || "openai"
+    (configQuery.data as any)?.sttProviderId || "parakeet"
   const shortcut = (configQuery.data as any)?.shortcut || "hold-ctrl"
   const textInputShortcut = (configQuery.data as any)?.textInputShortcut || "ctrl-t"
 
@@ -471,90 +459,12 @@ export function Component() {
         </ControlGroup>
 
         <ControlGroup title="Speech-to-Text">
-          <Control label={<ControlLabel label="Language" tooltip="Select the language for speech transcription. 'Auto-detect' lets the model determine the language automatically based on your speech." />} className="px-3">
-            <Select
-              value={configQuery.data.sttLanguage || "auto"}
-              onValueChange={(value) => {
-                saveConfig({
-                  sttLanguage: value,
-                })
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_LANGUAGES.map((language) => (
-                  <SelectItem key={language.code} value={language.code}>
-                    {language.nativeName} ({language.name})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Parakeet (local STT) uses automatic language detection */}
+          <Control label={<ControlLabel label="Provider" tooltip="Speech-to-text provider. Currently only Parakeet (local) is supported." />} className="px-3">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              Parakeet (Local)
+            </div>
           </Control>
-
-          {sttProviderId === "openai" && configQuery.data.openaiSttLanguage && configQuery.data.openaiSttLanguage !== configQuery.data.sttLanguage && (
-            <Control label={<ControlLabel label="OpenAI Language Override" tooltip="Override the global language setting specifically for OpenAI's Whisper transcription service." />} className="px-3">
-              <Select
-                value={configQuery.data.openaiSttLanguage || "auto"}
-                onValueChange={(value) => {
-                  saveConfig({
-                    openaiSttLanguage: value,
-                  })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_LANGUAGES.map((language) => (
-                    <SelectItem key={language.code} value={language.code}>
-                      {language.nativeName} ({language.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Control>
-          )}
-
-          {sttProviderId === "groq" && configQuery.data.groqSttLanguage && configQuery.data.groqSttLanguage !== configQuery.data.sttLanguage && (
-            <Control label={<ControlLabel label="Groq Language Override" tooltip="Override the global language setting specifically for Groq's Whisper transcription service." />} className="px-3">
-              <Select
-                value={configQuery.data.groqSttLanguage || "auto"}
-                onValueChange={(value) => {
-                  saveConfig({
-                    groqSttLanguage: value,
-                  })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_LANGUAGES.map((language) => (
-                    <SelectItem key={language.code} value={language.code}>
-                      {language.nativeName} ({language.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Control>
-          )}
-
-          {sttProviderId === "groq" && (
-            <Control label={<ControlLabel label="Prompt" tooltip="Optional prompt to guide the model's style or specify how to spell unfamiliar words. Limited to 224 tokens." />} className="px-3">
-              <Textarea
-                placeholder="Optional prompt to guide the model's style or specify how to spell unfamiliar words (limited to 224 tokens)"
-                defaultValue={configQuery.data.groqSttPrompt || ""}
-                onChange={(e) => {
-                  saveConfig({
-                    groqSttPrompt: e.currentTarget.value,
-                  })
-                }}
-                className="min-h-[80px]"
-              />
-            </Control>
-          )}
 
           <Control label={<ControlLabel label="Post-Processing" tooltip="Enable AI-powered post-processing to clean up and improve transcripts" />} className="px-3">
             <Switch
@@ -614,94 +524,7 @@ export function Component() {
           )}
         </ControlGroup>
 
-        <ControlGroup title="Text to Speech">
-          <Control label="Enabled" className="px-3">
-            <Switch
-              defaultChecked={configQuery.data.ttsEnabled ?? false}
-              onCheckedChange={(value) => {
-                saveConfig({
-                  ttsEnabled: value,
-                })
-              }}
-            />
-          </Control>
-
-          {configQuery.data.ttsEnabled && (
-            <Control label={<ControlLabel label="Auto-play" tooltip="Automatically play TTS audio when assistant responses complete" />} className="px-3">
-              <Switch
-                defaultChecked={configQuery.data.ttsAutoPlay ?? true}
-                onCheckedChange={(value) => {
-                  saveConfig({
-                    ttsAutoPlay: value,
-                  })
-                }}
-              />
-            </Control>
-          )}
-
-          {configQuery.data.ttsEnabled && (
-            <>
-              <Control label={<ControlLabel label="Text Preprocessing" tooltip="Enable preprocessing to make text more speech-friendly by removing code blocks, URLs, and converting markdown" />} className="px-3">
-                <Switch
-                  defaultChecked={configQuery.data.ttsPreprocessingEnabled ?? true}
-                  onCheckedChange={(value) => {
-                    saveConfig({
-                      ttsPreprocessingEnabled: value,
-                    })
-                  }}
-                />
-              </Control>
-
-              {configQuery.data.ttsPreprocessingEnabled !== false && (
-                <>
-                  <Control label={<ControlLabel label="Remove Code Blocks" tooltip="Remove code blocks and replace with descriptive text" />} className="px-3">
-                    <Switch
-                      defaultChecked={configQuery.data.ttsRemoveCodeBlocks ?? true}
-                      onCheckedChange={(value) => {
-                        saveConfig({
-                          ttsRemoveCodeBlocks: value,
-                        })
-                      }}
-                    />
-                  </Control>
-
-                  <Control label={<ControlLabel label="Remove URLs" tooltip="Remove URLs and replace with descriptive text" />} className="px-3">
-                    <Switch
-                      defaultChecked={configQuery.data.ttsRemoveUrls ?? true}
-                      onCheckedChange={(value) => {
-                        saveConfig({
-                          ttsRemoveUrls: value,
-                        })
-                      }}
-                    />
-                  </Control>
-
-                  <Control label={<ControlLabel label="Convert Markdown" tooltip="Convert markdown formatting to speech-friendly text" />} className="px-3">
-                    <Switch
-                      defaultChecked={configQuery.data.ttsConvertMarkdown ?? true}
-                      onCheckedChange={(value) => {
-                        saveConfig({
-                          ttsConvertMarkdown: value,
-                        })
-                      }}
-                    />
-                  </Control>
-
-                  <Control label={<ControlLabel label="Use AI for TTS Preprocessing" tooltip="Use an LLM to intelligently convert text to natural speech. More robust handling of abbreviations, acronyms, and context-dependent pronunciation. Adds ~1-2 seconds latency. Falls back to regex if disabled or unavailable." />} className="px-3">
-                    <Switch
-                      defaultChecked={configQuery.data.ttsUseLLMPreprocessing ?? false}
-                      onCheckedChange={(value) => {
-                        saveConfig({
-                          ttsUseLLMPreprocessing: value,
-                        })
-                      }}
-                    />
-                  </Control>
-                </>
-              )}
-            </>
-          )}
-        </ControlGroup>
+        {/* TTS is disabled - no providers available after refactor to Nemotron + Parakeet only */}
 
         {/* Panel Position Settings */}
         <ControlGroup title="Panel Position">
@@ -762,7 +585,7 @@ export function Component() {
             />
           </Control>
 
-          <Control label={<ControlLabel label="Hide Panel When Main App Focused" tooltip="When enabled, the floating panel automatically hides when the main SpeakMCP window is focused. The panel reappears when the main window loses focus." />} className="px-3">
+          <Control label={<ControlLabel label="Hide Panel When Main App Focused" tooltip="When enabled, the floating panel automatically hides when the main NVIDIA Control Center window is focused. The panel reappears when the main window loses focus." />} className="px-3">
             <Switch
               checked={configQuery.data?.hidePanelWhenMainFocused !== false}
               onCheckedChange={(value) => {
@@ -780,12 +603,12 @@ export function Component() {
           title="WhatsApp Integration"
           endDescription={(
             <div className="break-words whitespace-normal">
-              Enable WhatsApp messaging through SpeakMCP.{" "}
+              Enable WhatsApp messaging through NVIDIA Control Center.{" "}
               <a href="/settings/whatsapp" className="underline">Configure WhatsApp settings</a>.
             </div>
           )}
         >
-          <Control label={<ControlLabel label="Enable WhatsApp" tooltip="When enabled, allows sending and receiving WhatsApp messages through SpeakMCP" />} className="px-3">
+          <Control label={<ControlLabel label="Enable WhatsApp" tooltip="When enabled, allows sending and receiving WhatsApp messages through NVIDIA Control Center" />} className="px-3">
             <Switch
               checked={configQuery.data?.whatsappEnabled ?? false}
               onCheckedChange={(value) => saveConfig({ whatsappEnabled: value })}
@@ -839,11 +662,11 @@ export function Component() {
 
               {configQuery.data?.mainAgentName && (
                 <div className="px-3 py-2 text-sm text-muted-foreground bg-muted/30 rounded-md mx-3 mb-2">
-                  <span className="font-medium">Note:</span> When using ACP mode, the agent will use its own MCP tools and LLM, not SpeakMCP's configured providers and tools.
+                  <span className="font-medium">Note:</span> When using ACP mode, the agent will use its own MCP tools and LLM, not NVIDIA Control Center's configured providers and tools.
                 </div>
               )}
 
-              <Control label={<ControlLabel label="Inject SpeakMCP Tools" tooltip="When enabled, SpeakMCP's builtin tools (delegation, settings management) are injected into ACP agent sessions. This allows the ACP agent to delegate tasks to other agents. Requires Remote Server to be enabled." />} className="px-3">
+              <Control label={<ControlLabel label="Inject NVIDIA Control Center Tools" tooltip="When enabled, NVIDIA Control Center's builtin tools (delegation, settings management) are injected into ACP agent sessions. This allows the ACP agent to delegate tasks to other agents. Requires Remote Server to be enabled." />} className="px-3">
                 <Switch
                   checked={configQuery.data?.acpInjectBuiltinTools !== false}
                   disabled={!configQuery.data?.remoteServerEnabled}

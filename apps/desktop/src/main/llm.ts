@@ -429,18 +429,9 @@ export async function processTranscriptWithAgentMode(
   let contextInfoRef: { estTokens: number; maxTokens: number } | undefined = undefined
 
   // Get model info for progress display
-  const providerId = config.mcpToolsProviderId || "openai"
-  const modelName = providerId === "openai"
-    ? config.mcpToolsOpenaiModel || "gpt-4o-mini"
-    : providerId === "groq"
-    ? config.mcpToolsGroqModel || "llama-3.3-70b-versatile"
-    : providerId === "gemini"
-    ? config.mcpToolsGeminiModel || "gemini-1.5-flash-002"
-    : "gpt-4o-mini"
-  // For OpenAI provider, use the preset name (e.g., "OpenRouter", "Together AI")
-  const providerDisplayName = providerId === "openai"
-    ? getCurrentPresetName(config.currentModelPresetId, config.modelPresets)
-    : providerId === "groq" ? "Groq" : providerId === "gemini" ? "Gemini" : providerId
+  const providerId = config.mcpToolsProviderId || "nemotron"
+  const modelName = config.mcpToolsNemotronModel || "nvidia/llama-3.1-nemotron-70b-instruct"
+  const providerDisplayName = "Nemotron"
   const modelInfoRef = { provider: providerDisplayName, model: modelName }
 
   // Create bound emitter that always includes sessionId, conversationId, snooze state, sessionStartIndex, conversationTitle, and contextInfo
@@ -1937,7 +1928,7 @@ Return ONLY JSON per schema.`,
     }
 
     // Handle no-op iterations (no tool calls and no explicit completion)
-    // Fix for https://github.com/aj47/SpeakMCP/issues/443:
+    // Fix for https://github.com/aj47/nvidia-control-center/issues/443:
     // Only terminate when needsMoreWork is EXPLICITLY false, not when undefined.
     // When LLM returns plain text without tool calls, needsMoreWork will be undefined,
     // and we should nudge to either use tools or provide a complete answer.
@@ -3258,9 +3249,9 @@ async function makeLLMCall(
       }
     }
 
-    // If streaming callback is provided and provider supports it, use streaming
+    // If streaming callback is provided, use streaming
     // Note: Streaming is only for display purposes - we still need the full response for tool calls
-    if (onStreamingUpdate && chatProviderId !== "gemini") {
+    if (onStreamingUpdate) {
       // Create abort controller for streaming - we'll abort when structured call completes
       const streamingAbortController = new AbortController()
 

@@ -14,8 +14,8 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/aj47/SpeakMCP.git
-cd SpeakMCP
+git clone https://github.com/aj47/nvidia-control-center.git
+cd nvidia-control-center
 pnpm install
 pnpm build-rs  # Build Rust binary
 pnpm dev       # Start development server
@@ -46,7 +46,7 @@ docker compose run --rm --build build-linux  # Rebuild after code changes
 docker compose run --rm shell             # Interactive development shell
 ```
 
-> **Note**: SpeakMCP is an Electron desktop app that requires a display. Docker is primarily for building Linux packages.
+> **Note**: NVIDIA Control Center is an Electron desktop app that requires a display. Docker is primarily for building Linux packages.
 
 ## Debug Mode
 
@@ -64,12 +64,12 @@ See [apps/desktop/DEBUGGING.md](apps/desktop/DEBUGGING.md) for detailed debuggin
 ## Project Structure
 
 ```
-SpeakMCP/
+nvidia-control-center/
 ├── apps/
 │   ├── desktop/         # Electron desktop application
-│   │   ├── src/main/    # Main process (MCP, TTS, system integration)
+│   │   ├── src/main/    # Main process
 │   │   ├── src/renderer/# React UI
-│   │   └── speakmcp-rs/ # Rust keyboard/input binary
+│   │   └── nvidia-cc-rs/ # Rust native binary
 │   └── mobile/          # React Native mobile app (Expo)
 ├── packages/
 │   └── shared/          # Shared utilities and types
@@ -119,11 +119,11 @@ nvm use 20      # If using nvm
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Desktop App | Electron | System integration, MCP orchestration, TTS |
+| Desktop App | Electron | System integration, MCP orchestration |
 | UI | React + TypeScript | Real-time progress tracking, conversation management |
 | Native Binary | Rust | Keyboard monitoring, text injection |
 | MCP Client | TypeScript | Model Context Protocol with OAuth 2.1 |
-| AI Providers | OpenAI, Groq, Gemini | Speech recognition, LLM, TTS |
+| AI Providers | NVIDIA Nemotron, Parakeet | LLM (Nemotron), Speech recognition (Parakeet) |
 | Multi-Agent | ACP | Task delegation to specialized sub-agents |
 
 ## Contributing

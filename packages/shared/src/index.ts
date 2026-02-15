@@ -1,7 +1,7 @@
 /**
- * @speakmcp/shared
+ * @nvidia-cc/shared
  *
- * Shared design tokens, types, and utilities for SpeakMCP apps
+ * Shared design tokens, types, and utilities for NVIDIA Control Center apps
  */
 
 export * from './colors';

@@ -1,32 +1,32 @@
 {
   "expo": {
-    "name": "SpeakMCP",
-    "slug": "speakmcp-mobile",
-    "scheme": "speakmcp",
+    "name": "NVIDIA Control Center",
+    "slug": "nvidia-cc-mobile",
+    "scheme": "nvidia-cc",
     "version": "1.3.0",
     "orientation": "portrait",
-    "icon": "./assets/speakmcp-icon.png",
+    "icon": "./assets/nvidia-cc-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/speakmcp-icon.png",
+      "image": "./assets/nvidia-cc-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aj47.speakmcp",
+      "bundleIdentifier": "com.aj47.nvidia-cc",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses the microphone for voice input.",
         "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to transcribe your voice.",
         "NSCameraUsageDescription": "This app uses the camera to scan QR codes for configuration.",
-        "NSUserNotificationsUsageDescription": "This app sends notifications when new messages arrive from your AI assistant.",
+        "NSUserNotificationsUsageDescription": "This app sends notifications when new messages arrive.",
         "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/speakmcp-icon.png",
+        "foregroundImage": "./assets/nvidia-cc-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -35,10 +35,10 @@
         "RECORD_AUDIO",
         "CAMERA"
       ],
-      "package": "com.aj47.speakmcp"
+      "package": "com.aj47.nvidia_cc"
     },
     "web": {
-      "favicon": "./assets/speakmcp-icon.png"
+      "favicon": "./assets/nvidia-cc-icon.png"
     },
     "plugins": [
       "expo-speech-recognition",
@@ -51,7 +51,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/speakmcp-icon.png",
+          "icon": "./assets/nvidia-cc-icon.png",
           "color": "#ffffff",
           "sounds": [],
           "defaultChannel": "default"

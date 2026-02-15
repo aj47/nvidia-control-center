@@ -308,7 +308,7 @@ export const Component = () => {
             {!isCollapsed && (
               <>
                 <div className={cn(isFrost && "frost-sidebar-footer-badge")}>
-                  SpeakMCP
+                  NVIDIA Control Center
                 </div>
                 <div
                   className={cn(

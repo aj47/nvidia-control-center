@@ -1804,7 +1804,12 @@ html.frost body {
 html.frost::before {
   content: "";
   position: fixed;
-  inset: 0;
+  /* Enlarged to 200% to prevent edges showing during rotation */
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  transform: translate(-50%, -50%);
   z-index: 0;
   pointer-events: none;
   background-image:
@@ -2222,13 +2227,13 @@ html.frost::after {
 
 @keyframes frost-grid-revolve {
   0% {
-    transform: rotate(0deg) scale(1.015);
+    transform: translate(-50%, -50%) rotate(0deg) scale(1.015);
   }
   50% {
-    transform: rotate(180deg) scale(1.03);
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.03);
   }
   100% {
-    transform: rotate(360deg) scale(1.015);
+    transform: translate(-50%, -50%) rotate(360deg) scale(1.015);
   }
 }
 
@@ -2820,81 +2825,4 @@ html.frost::after {
   animation: frost-scan-sweep 4s linear infinite;
 }
 
-/* Reduced motion: keep frost clean & stable */
-@media (prefers-reduced-motion: reduce) {
-  html.frost::before,
-  html.frost::after {
-    animation: none !important;
-  }
 
-  html.frost::before {
-    background-position:
-      0 0,
-      0 0,
-      -320px 176px,
-      264px -320px,
-      -320px 440px,
-      616px -320px,
-      -320px 264px,
-      352px -320px,
-      -320px 528px,
-      704px -320px,
-      -320px 176px,
-      264px -320px,
-      -320px 440px,
-      616px -320px,
-      -320px 264px,
-      352px -320px,
-      -320px 528px,
-      704px -320px !important;
-  }
-
-  html.frost::after {
-    transform: none !important;
-    filter: none !important;
-  }
-
-  .frost .settings-page-energy-overlay,
-  .frost .settings-page-energy-pulse {
-    animation: none !important;
-    display: none !important;
-  }
-
-  .frost .sessions-page-shell::after,
-  .frost .settings-page-shell::after {
-    animation: none !important;
-    opacity: 0.14 !important;
-    filter: none !important;
-  }
-
-  .frost .frost-animate-breath,
-  .frost .frost-animate-glow-pulse,
-  .frost .frost-animate-scan-sweep,
-  .frost .frost-svc-node.state-live .frost-svc-shape {
-    animation: none !important;
-  }
-
-  .frost .frost-frame,
-  .frost .floating-panel,
-  .frost .floating-panel-glass,
-  .frost .modern-nav,
-  .frost .voice-input-panel,
-  .frost .text-input-panel,
-  .frost .progress-panel,
-  .frost .modern-panel,
-  .frost .modern-panel-subtle,
-  .frost .modern-panel-strong,
-  .frost .modern-card,
-  .frost .modern-input,
-  .frost .modern-interactive,
-  .frost .modern-button,
-  .frost .modern-shine::after,
-  .frost .frost-edge-glow::after {
-    transition: none !important;
-  }
-
-  .frost .modern-interactive:hover,
-  .frost .modern-button:hover {
-    transform: none !important;
-  }
-}

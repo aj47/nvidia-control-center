@@ -114,16 +114,15 @@ export function Component() {
   const handleSaveApiKey = useCallback(async () => {
     if (!apiKey.trim()) return
 
-    // Save Groq API key and set Groq as the default provider for STT, chat, and TTS
+    // Save Nemotron API key and set Nemotron as the default provider for chat
+    // Parakeet is used for STT (local)
     // Wait for config to save before advancing to ensure transcription uses the new provider
-    // Set recommended models: gpt-oss-120b for agent tasks
     await saveConfigAsync({
-      groqApiKey: apiKey.trim(),
-      sttProviderId: "groq",
-      transcriptPostProcessingProviderId: "groq",
-      mcpToolsProviderId: "groq",
-      mcpToolsGroqModel: "openai/gpt-oss-120b",
-      ttsProviderId: "groq",
+      nemotronApiKey: apiKey.trim(),
+      sttProviderId: "parakeet",
+      transcriptPostProcessingProviderId: "nemotron",
+      mcpToolsProviderId: "nemotron",
+      mcpToolsNemotronModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     })
 
     setStep("dictation")
@@ -551,16 +550,11 @@ function AgentStep({
   const handleTestAgent = async () => {
     if (!agentPrompt.trim()) return
 
-    // Check if API key is configured for the selected provider
-    const providerId = config?.mcpToolsProviderId || "openai"
-    const hasApiKey = providerId === "groq"
-      ? !!config?.groqApiKey
-      : providerId === "gemini"
-      ? !!config?.geminiApiKey
-      : !!config?.openaiApiKey
+    // Check if Nemotron API key is configured
+    const hasApiKey = !!config?.nemotronApiKey
 
     if (!hasApiKey) {
-      setAgentError(`No API key configured. Please go back and enter your ${providerId === "groq" ? "Groq" : providerId === "gemini" ? "Gemini" : "OpenAI"} API key, or configure it in Settings.`)
+      setAgentError(`No API key configured. Please go back and enter your NVIDIA Nemotron API key, or configure it in Settings.`)
       return
     }
 

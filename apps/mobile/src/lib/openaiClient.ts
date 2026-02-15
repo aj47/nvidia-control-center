@@ -3,7 +3,7 @@ import type {
   ToolResult,
   ConversationHistoryMessage,
   ChatApiResponse
-} from '@speakmcp/shared';
+} from '@nvidia-cc/shared';
 import { Platform } from 'react-native';
 import EventSource from 'react-native-sse';
 import {
@@ -36,7 +36,7 @@ export type ChatMessage = {
 
 export type ChatResponse = ChatApiResponse;
 
-export type { ToolCall, ToolResult, ConversationHistoryMessage } from '@speakmcp/shared';
+export type { ToolCall, ToolResult, ConversationHistoryMessage } from '@nvidia-cc/shared';
 export type { StreamingCheckpoint } from './connectionRecovery';
 
 export interface AgentProgressUpdate {
@@ -827,7 +827,7 @@ export class OpenAIClient {
       try {
         const obj = JSON.parse(line);
 
-        // Handle SpeakMCP-specific SSE event types
+        // Handle NVIDIA Control Center-specific SSE event types
         if (obj.type === 'progress' && obj.data) {
           const update = obj.data as AgentProgressUpdate;
           onProgress?.(update);

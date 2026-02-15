@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { QueuedMessage } from '@speakmcp/shared';
+import { QueuedMessage } from '@nvidia-cc/shared';
 import { useTheme } from './ThemeProvider';
 
 interface MessageQueuePanelProps {

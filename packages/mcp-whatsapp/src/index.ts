@@ -1,19 +1,19 @@
 /**
- * WhatsApp MCP Server for SpeakMCP
+ * WhatsApp MCP Server for NVIDIA Control Center
  *
  * This MCP server enables WhatsApp messaging capabilities through the
  * Model Context Protocol. It allows AI agents to send and receive
  * WhatsApp messages.
  *
  * Usage:
- *   npx @speakmcp/mcp-whatsapp
+ *   npx @nvidia-cc/mcp-whatsapp
  *
- * Or add to SpeakMCP MCP config:
+ * Or add to NVIDIA Control Center MCP config:
  *   {
  *     "mcpServers": {
  *       "whatsapp": {
  *         "command": "npx",
- *         "args": ["@speakmcp/mcp-whatsapp"]
+ *         "args": ["@nvidia-cc/mcp-whatsapp"]
  *       }
  *     }
  *   }
@@ -33,7 +33,7 @@ import type { WhatsAppConfig, WhatsAppMessage } from "./types.js"
 
 // Configuration from environment variables
 const config: WhatsAppConfig = {
-  authDir: process.env.WHATSAPP_AUTH_DIR || path.join(os.homedir(), ".speakmcp", "whatsapp-auth"),
+  authDir: process.env.WHATSAPP_AUTH_DIR || path.join(os.homedir(), ".nvidia-control-center", "whatsapp-auth"),
   allowFrom: process.env.WHATSAPP_ALLOW_FROM?.split(",").map((s) => s.trim()) || [],
   autoReply: process.env.WHATSAPP_AUTO_REPLY === "true",
   callbackUrl: process.env.WHATSAPP_CALLBACK_URL,

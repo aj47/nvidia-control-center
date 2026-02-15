@@ -77,8 +77,8 @@ const DEFAULT_PROFILES: Omit<AgentProfile, "id" | "createdAt" | "updatedAt">[] =
       enabledBuiltinTools: [],
     },
     modelConfig: {
-      mcpToolsProviderId: "openai",
-      mcpToolsOpenaiModel: "gpt-4o",
+      mcpToolsProviderId: "nemotron",
+      mcpToolsNemotronModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     },
     skillsConfig: {
       enabledSkillIds: [],

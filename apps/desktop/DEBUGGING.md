@@ -1,4 +1,4 @@
-# SpeakMCP Debugging Guide
+# NVIDIA Control Center Debugging Guide
 
 ## 🔧 Quick Start: Enable Debug Logging
 

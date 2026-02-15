@@ -12,49 +12,7 @@ export const conversationsFolder = path.join(dataFolder, "conversations")
 
 export const configPath = path.join(dataFolder, "config.json")
 
-// Valid Orpheus voices - used for migration validation
-const ORPHEUS_ENGLISH_VOICES = ["autumn", "diana", "hannah", "austin", "daniel", "troy"]
-const ORPHEUS_ARABIC_VOICES = ["fahad", "sultan", "lulwa", "noura"]
 
-// Valid Groq TTS model IDs
-const VALID_GROQ_TTS_MODELS = ["canopylabs/orpheus-v1-english", "canopylabs/orpheus-arabic-saudi"]
-
-/**
- * Migrate deprecated Groq TTS PlayAI models/voices to new Orpheus equivalents.
- * This ensures existing installs with saved PlayAI settings continue to work.
- */
-function migrateGroqTtsConfig(config: Partial<Config>): Partial<Config> {
-  // Migrate deprecated PlayAI models to Orpheus equivalents
-  // Use string comparison since saved config may contain deprecated values not in current type
-  const savedModel = config.groqTtsModel as string | undefined
-  if (savedModel === "playai-tts") {
-    config.groqTtsModel = "canopylabs/orpheus-v1-english"
-  } else if (savedModel === "playai-tts-arabic") {
-    config.groqTtsModel = "canopylabs/orpheus-arabic-saudi"
-  } else if (savedModel && !VALID_GROQ_TTS_MODELS.includes(savedModel)) {
-    // Unknown model value (user-edited config.json) - reset to default English model
-    config.groqTtsModel = "canopylabs/orpheus-v1-english"
-  }
-
-  // Migrate voices: check if voice is valid for the current model
-  // Guard with typeof check since config.json is user-editable and groqTtsVoice could be non-string
-  const voice = config.groqTtsVoice
-  const isValidVoice = voice && typeof voice === "string"
-  
-  if (config.groqTtsModel === "canopylabs/orpheus-arabic-saudi") {
-    // For Arabic model, ensure voice is a valid Arabic voice
-    if (!isValidVoice || !ORPHEUS_ARABIC_VOICES.includes(voice)) {
-      config.groqTtsVoice = "fahad" // Default Arabic voice
-    }
-  } else if (config.groqTtsModel === "canopylabs/orpheus-v1-english") {
-    // For English model, ensure voice is a valid English voice
-    if (!isValidVoice || !ORPHEUS_ENGLISH_VOICES.includes(voice)) {
-      config.groqTtsVoice = "troy" // Default English voice
-    }
-  }
-
-  return config
-}
 
 const getConfig = () => {
   // Platform-specific defaults
@@ -113,7 +71,7 @@ const getConfig = () => {
     // Hide floating panel when main app is focused (default: enabled)
     hidePanelWhenMainFocused: true,
     // Theme preference defaults
-    themePreference: "system",
+    themePreference: "frost",
 
     // Parakeet STT defaults
     parakeetNumThreads: 2,
@@ -123,33 +81,14 @@ const getConfig = () => {
 	    launchAtLogin: false,
 	    hideDockIcon: false,
 
-    // TTS defaults
-    ttsEnabled: true,
-    ttsAutoPlay: true,
-    ttsProviderId: "openai",
-    ttsPreprocessingEnabled: true,
-    ttsRemoveCodeBlocks: true,
-    ttsRemoveUrls: true,
-    ttsConvertMarkdown: true,
-    // LLM-based TTS preprocessing (off by default - uses regex for fast/free processing)
-    ttsUseLLMPreprocessing: false,
-    // OpenAI TTS defaults
-    openaiTtsModel: "tts-1",
-    openaiTtsVoice: "alloy",
-    openaiTtsSpeed: 1.0,
-    openaiTtsResponseFormat: "mp3",
-    // OpenAI Compatible Provider defaults
-    openaiCompatiblePreset: "openai",
-    // Groq TTS defaults
-    groqTtsModel: "canopylabs/orpheus-v1-english",
-    groqTtsVoice: "troy",
-    // Gemini TTS defaults
-    geminiTtsModel: "gemini-2.5-flash-preview-tts",
-    geminiTtsVoice: "Kore",
     // Provider Section Collapse defaults - collapsed by default
-    providerSectionCollapsedOpenai: true,
-    providerSectionCollapsedGroq: true,
-    providerSectionCollapsedGemini: true,
+    providerSectionCollapsedNemotron: true,
+    providerSectionCollapsedParakeet: true,
+
+    // Default providers - only Nemotron and Parakeet are available
+    sttProviderId: "parakeet",
+    mcpToolsProviderId: "nemotron",
+    transcriptPostProcessingProviderId: "nemotron",
 
     // API Retry defaults
     apiRetryCount: 3,
@@ -212,7 +151,7 @@ const getConfig = () => {
     // Memory System defaults - enabled by default for backwards compatibility
     memoriesEnabled: true,
 
-    // ACP Tool Injection - when true, injects SpeakMCP builtin tools into ACP agent sessions
+    // ACP Tool Injection - when true, injects builtin tools into ACP agent sessions
     // This allows ACP agents to use delegation, settings management, etc.
     acpInjectBuiltinTools: true,
 
@@ -230,7 +169,7 @@ const getConfig = () => {
     delete (mergedConfig as any).panelAgentModeSize
     delete (mergedConfig as any).panelTextInputModeSize
 
-    return migrateGroqTtsConfig(mergedConfig)
+    return mergedConfig
   } catch {
     return defaultConfig
   }
@@ -261,33 +200,11 @@ function getActivePreset(config: Partial<Config>): ModelPreset | undefined {
   return allPresets.find(p => p.id === currentPresetId)
 }
 
-/**
- * Sync the active preset's credentials and model preferences to legacy config fields for backward compatibility.
- * Always syncs all fields together to keep them consistent with the active preset.
- */
-function syncPresetToLegacyFields(config: Partial<Config>): Partial<Config> {
-  const activePreset = getActivePreset(config)
-  if (activePreset) {
-    // Always sync both fields to keep them consistent with the active preset
-    // If preset has empty values, legacy fields should reflect that
-    config.openaiApiKey = activePreset.apiKey || ''
-    config.openaiBaseUrl = activePreset.baseUrl || ''
-
-    // Always sync model preferences to keep legacy fields consistent with the active preset
-    // If preset has empty/undefined values, legacy fields should reflect that
-    config.mcpToolsOpenaiModel = activePreset.mcpToolsModel || ''
-    config.transcriptPostProcessingOpenaiModel = activePreset.transcriptProcessingModel || ''
-  }
-  return config
-}
-
 class ConfigStore {
   config: Config | undefined
 
   constructor() {
-    const loadedConfig = getConfig()
-    // Sync active preset credentials to legacy fields on startup
-    this.config = syncPresetToLegacyFields(loadedConfig) as Config
+    this.config = getConfig() as Config
   }
 
   get(): Config {
@@ -295,8 +212,7 @@ class ConfigStore {
   }
 
   save(config: Config) {
-    // Sync active preset credentials before saving
-    this.config = syncPresetToLegacyFields(config) as Config
+    this.config = config
     fs.mkdirSync(dataFolder, { recursive: true })
     fs.writeFileSync(configPath, JSON.stringify(this.config))
   }

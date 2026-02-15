@@ -19,7 +19,7 @@ import * as Linking from 'expo-linking';
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 
 
-const speakMCPIcon = require('./assets/speakmcp-icon.png');
+const nvidiaControlCenterIcon = require('./assets/nvidia-cc-icon.png');
 const darkSpinner = require('./assets/loading-spinner.gif');
 const lightSpinner = require('./assets/light-spinner.gif');
 
@@ -29,7 +29,7 @@ function parseDeepLink(url: string | null) {
   if (!url) return null;
   try {
     const parsed = Linking.parse(url);
-    // Handle speakmcp://config?baseUrl=...&apiKey=...&model=...
+    // Handle nvidia-cc://config?baseUrl=...&apiKey=...&model=...
     if (parsed.path === 'config' || parsed.hostname === 'config') {
       const { baseUrl, apiKey, model } = parsed.queryParams || {};
       if (baseUrl || apiKey || model) {
@@ -232,7 +232,7 @@ function Navigation() {
                       contentStyle: { backgroundColor: theme.colors.background },
                       headerLeft: () => (
                         <Image
-                          source={speakMCPIcon}
+                          source={nvidiaControlCenterIcon}
                           style={{ width: 28, height: 28, marginLeft: 12, marginRight: 8 }}
                           resizeMode="contain"
                         />
@@ -249,7 +249,7 @@ function Navigation() {
                     <Stack.Screen
                       name="Settings"
                       component={SettingsScreen}
-                      options={{ title: 'SpeakMCP' }}
+                      options={{ title: 'NVIDIA Control Center' }}
                     />
                     <Stack.Screen
                       name="Sessions"

@@ -349,25 +349,6 @@ function getModelContextWindow(providerId: string, model: string): number {
   return 64_000
 }
 
-async function fetchGroqContextWindow(model: string): Promise<number | undefined> {
-  try {
-    const config = configStore.get()
-    const baseURL = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-    const apiKey = config.groqApiKey
-    if (!apiKey) return undefined
-    const resp = await fetch(`${baseURL}/models`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-    if (!resp.ok) return undefined
-    const data = await resp.json() as any
-    const list = Array.isArray(data?.data) ? data.data : []
-    const entry = list.find((m: any) => m?.id === model)
-    const ctx = entry?.context_length || entry?.max_context_tokens || entry?.context_window
-    if (typeof ctx === "number") return ctx
-  } catch {}
-  return undefined
-}
-
 export async function getMaxContextTokens(providerId: string, model: string): Promise<number> {
   const cfg = configStore.get()
   const override = cfg.mcpMaxContextTokensOverride
@@ -376,12 +357,8 @@ export async function getMaxContextTokens(providerId: string, model: string): Pr
   const k = key(providerId, model)
   if (contextWindowCache.has(k)) return contextWindowCache.get(k)!
 
-  let result: number | undefined
-  if (providerId === "groq") {
-    result = await fetchGroqContextWindow(model)
-  }
   // Use model registry with fuzzy matching for context window lookup
-  if (!result) result = getModelContextWindow(providerId, model)
+  const result = getModelContextWindow(providerId, model)
 
   contextWindowCache.set(k, result)
   return result
@@ -395,15 +372,8 @@ export function estimateTokensFromMessages(messages: LLMMessage[]): number {
 
 export function getProviderAndModel(): { providerId: string; model: string } {
   const config = configStore.get()
-  const providerId = config.mcpToolsProviderId || "openai"
-  let model = "gpt-4o-mini"
-  if (providerId === "openai") {
-    model = config.mcpToolsOpenaiModel || "gpt-4o-mini"
-  } else if (providerId === "groq") {
-    model = config.mcpToolsGroqModel || "llama-3.3-70b-versatile"
-  } else if (providerId === "gemini") {
-    model = config.mcpToolsGeminiModel || "gemini-1.5-flash-002"
-  }
+  const providerId = config.mcpToolsProviderId || "nemotron"
+  const model = config.mcpToolsNemotronModel || "nvidia/llama-3.1-nemotron-70b-instruct"
   return { providerId, model }
 }
 

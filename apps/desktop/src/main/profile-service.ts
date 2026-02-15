@@ -7,14 +7,12 @@ import { logApp } from "./debug"
 import { configStore } from "./config"
 import { getBuiltinToolNames } from "./builtin-tool-definitions"
 
-const RESERVED_SERVER_NAMES = ["speakmcp-settings"]
+const RESERVED_SERVER_NAMES = ["nvidia-cc-settings"]
 
 // Valid provider IDs that are supported by the application
-const VALID_PROVIDER_IDS = ["openai", "groq", "gemini"]
-// STT supports openai, groq, and parakeet (local)
-const VALID_STT_PROVIDER_IDS = ["openai", "groq", "parakeet"]
-// TTS supports openai, groq, gemini, and kitten (local)
-const VALID_TTS_PROVIDER_IDS = ["openai", "groq", "gemini", "kitten"]
+const VALID_PROVIDER_IDS = ["nemotron"]
+// STT supports only parakeet (local)
+const VALID_STT_PROVIDER_IDS = ["parakeet"]
 
 /**
  * Validates the shape of an imported MCP server config
@@ -206,29 +204,18 @@ function isValidModelConfig(config: unknown): boolean {
     }
   }
 
-  // sttProviderId supports openai, groq, and parakeet (local)
+  // sttProviderId supports only parakeet (local)
   if (c.sttProviderId !== undefined) {
     if (typeof c.sttProviderId !== "string" || !VALID_STT_PROVIDER_IDS.includes(c.sttProviderId as string)) {
       return false
     }
   }
 
-  // ttsProviderId supports openai, groq, gemini, and kitten (local)
-  if (c.ttsProviderId !== undefined) {
-    if (typeof c.ttsProviderId !== "string" || !VALID_TTS_PROVIDER_IDS.includes(c.ttsProviderId as string)) {
-      return false
-    }
-  }
-
   // Other string fields that don't need enum validation
   const stringFields = [
-    "mcpToolsOpenaiModel",
-    "mcpToolsGroqModel",
-    "mcpToolsGeminiModel",
+    "mcpToolsNemotronModel",
     "currentModelPresetId",
-    "transcriptPostProcessingOpenaiModel",
-    "transcriptPostProcessingGroqModel",
-    "transcriptPostProcessingGeminiModel",
+    "transcriptPostProcessingNemotronModel",
   ]
 
   for (const field of stringFields) {
@@ -526,19 +513,13 @@ class ProfileService {
       ...(profile.modelConfig ?? {}),
       // Agent/MCP Tools settings
       ...(modelConfig.mcpToolsProviderId !== undefined && { mcpToolsProviderId: modelConfig.mcpToolsProviderId }),
-      ...(modelConfig.mcpToolsOpenaiModel !== undefined && { mcpToolsOpenaiModel: modelConfig.mcpToolsOpenaiModel }),
-      ...(modelConfig.mcpToolsGroqModel !== undefined && { mcpToolsGroqModel: modelConfig.mcpToolsGroqModel }),
-      ...(modelConfig.mcpToolsGeminiModel !== undefined && { mcpToolsGeminiModel: modelConfig.mcpToolsGeminiModel }),
+      ...(modelConfig.mcpToolsNemotronModel !== undefined && { mcpToolsNemotronModel: modelConfig.mcpToolsNemotronModel }),
       ...(modelConfig.currentModelPresetId !== undefined && { currentModelPresetId: modelConfig.currentModelPresetId }),
       // STT Provider settings
       ...(modelConfig.sttProviderId !== undefined && { sttProviderId: modelConfig.sttProviderId }),
       // Transcript Post-Processing settings
       ...(modelConfig.transcriptPostProcessingProviderId !== undefined && { transcriptPostProcessingProviderId: modelConfig.transcriptPostProcessingProviderId }),
-      ...(modelConfig.transcriptPostProcessingOpenaiModel !== undefined && { transcriptPostProcessingOpenaiModel: modelConfig.transcriptPostProcessingOpenaiModel }),
-      ...(modelConfig.transcriptPostProcessingGroqModel !== undefined && { transcriptPostProcessingGroqModel: modelConfig.transcriptPostProcessingGroqModel }),
-      ...(modelConfig.transcriptPostProcessingGeminiModel !== undefined && { transcriptPostProcessingGeminiModel: modelConfig.transcriptPostProcessingGeminiModel }),
-      // TTS Provider settings
-      ...(modelConfig.ttsProviderId !== undefined && { ttsProviderId: modelConfig.ttsProviderId }),
+      ...(modelConfig.transcriptPostProcessingNemotronModel !== undefined && { transcriptPostProcessingNemotronModel: modelConfig.transcriptPostProcessingNemotronModel }),
     }
 
     const updatedProfile = {

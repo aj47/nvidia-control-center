@@ -1,8 +1,8 @@
-# Security Policy for SpeakMCP
+# Security Policy for NVIDIA Control Center
 
 ## 🔒 Security Overview
 
-SpeakMCP is designed with security as a primary concern. This document outlines our security policies, vulnerability reporting procedures, and best practices for users and contributors.
+NVIDIA Control Center is designed with security as a primary concern. This document outlines our security policies, vulnerability reporting procedures, and best practices for users and contributors.
 
 ## 🛡️ Security Features
 
@@ -27,7 +27,7 @@ SpeakMCP is designed with security as a primary concern. This document outlines 
 ## 🚨 Vulnerability Reporting
 
 ### How to Report
-- **Email**: security@speakmcp.com
+- **Email**: security@nvidia-control-center.com
 - **GitHub**: Create a security advisory on our GitHub repository
 - **Responsible Disclosure**: 90-day disclosure timeline
 
@@ -68,7 +68,7 @@ SpeakMCP is designed with security as a primary concern. This document outlines 
 ## 📋 Incident Response
 
 ### Response Team
-- **Primary Contact**: security@speakmcp.com
+- **Primary Contact**: security@nvidia-control-center.com
 - **Response Time**: 24-48 hours for critical issues
 - **Communication**: Transparent public communication about security issues
 
@@ -94,8 +94,8 @@ SpeakMCP is designed with security as a primary concern. This document outlines 
 ## 📞 Contact Information
 
 ### Security Team
-- **Email**: security@speakmcp.com
-- **PGP Key**: Available on keybase.io/speakmcp
+- **Email**: security@nvidia-control-center.com
+- **PGP Key**: Available on keybase.io/nvidia-cc
 - **Emergency**: Use GitHub security advisories for urgent issues
 
 ### Response SLA

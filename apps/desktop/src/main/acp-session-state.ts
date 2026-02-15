@@ -1,7 +1,7 @@
 /**
  * ACP Session State Manager
  *
- * Manages mapping between SpeakMCP conversations and ACP sessions.
+ * Manages mapping between NVIDIA Control Center conversations and ACP sessions.
  * This allows maintaining context across multiple prompts in the same conversation
  * when using an ACP agent as the main agent.
  */
@@ -25,13 +25,13 @@ export interface ACPSessionInfo {
 // In-memory storage for conversation-to-session mapping
 const conversationSessions: Map<string, ACPSessionInfo> = new Map()
 
-// Mapping from ACP session ID → SpeakMCP session ID
+// Mapping from ACP session ID → NVIDIA Control Center session ID
 // This is needed for routing tool approval requests to the correct UI session
-const acpToSpeakMcpSession: Map<string, string> = new Map()
+const acpToNvidiaControlCenterSession: Map<string, string> = new Map()
 
 /**
  * Get the ACP session for a conversation (if any).
- * @param conversationId The SpeakMCP conversation ID
+ * @param conversationId The NVIDIA Control Center conversation ID
  * @returns Session info if exists, undefined otherwise
  */
 export function getSessionForConversation(conversationId: string): ACPSessionInfo | undefined {
@@ -40,7 +40,7 @@ export function getSessionForConversation(conversationId: string): ACPSessionInf
 
 /**
  * Set/update the ACP session for a conversation.
- * @param conversationId The SpeakMCP conversation ID
+ * @param conversationId The NVIDIA Control Center conversation ID
  * @param sessionId The ACP session ID
  * @param agentName The name of the ACP agent
  */
@@ -73,7 +73,7 @@ export function setSessionForConversation(
 /**
  * Clear the session for a conversation.
  * Use when user explicitly requests a new session or when conversation is deleted.
- * @param conversationId The SpeakMCP conversation ID
+ * @param conversationId The NVIDIA Control Center conversation ID
  */
 export function clearSessionForConversation(conversationId: string): void {
   if (conversationSessions.has(conversationId)) {
@@ -103,7 +103,7 @@ export function getAllSessions(): Map<string, ACPSessionInfo> {
 
 /**
  * Update the last used timestamp for a session.
- * @param conversationId The SpeakMCP conversation ID
+ * @param conversationId The NVIDIA Control Center conversation ID
  */
 export function touchSession(conversationId: string): void {
   const session = conversationSessions.get(conversationId)
@@ -113,36 +113,36 @@ export function touchSession(conversationId: string): void {
 }
 
 /**
- * Map an ACP session ID to a SpeakMCP session ID.
+ * Map an ACP session ID to a NVIDIA Control Center session ID.
  * This is needed for routing tool approval requests to the correct UI session.
  * @param acpSessionId The ACP agent's session ID
- * @param speakMcpSessionId The SpeakMCP internal session ID (for UI progress tracking)
+ * @param nvidiaControlCenterSessionId The NVIDIA Control Center internal session ID (for UI progress tracking)
  */
-export function setAcpToSpeakMcpSessionMapping(
+export function setAcpToNvidiaControlCenterSessionMapping(
   acpSessionId: string,
-  speakMcpSessionId: string
+  nvidiaControlCenterSessionId: string
 ): void {
-  acpToSpeakMcpSession.set(acpSessionId, speakMcpSessionId)
-  logApp(`[ACP Session] Mapped ACP session ${acpSessionId} → SpeakMCP session ${speakMcpSessionId}`)
+  acpToNvidiaControlCenterSession.set(acpSessionId, nvidiaControlCenterSessionId)
+  logApp(`[ACP Session] Mapped ACP session ${acpSessionId} → NVIDIA Control Center session ${nvidiaControlCenterSessionId}`)
 }
 
 /**
- * Get the SpeakMCP session ID for a given ACP session ID.
+ * Get the NVIDIA Control Center session ID for a given ACP session ID.
  * @param acpSessionId The ACP agent's session ID
- * @returns The SpeakMCP session ID, or undefined if not mapped
+ * @returns The NVIDIA Control Center session ID, or undefined if not mapped
  */
-export function getSpeakMcpSessionForAcpSession(acpSessionId: string): string | undefined {
-  return acpToSpeakMcpSession.get(acpSessionId)
+export function getNvidiaControlCenterSessionForAcpSession(acpSessionId: string): string | undefined {
+  return acpToNvidiaControlCenterSession.get(acpSessionId)
 }
 
 /**
- * Clear the ACP → SpeakMCP session mapping.
+ * Clear the ACP → NVIDIA Control Center session mapping.
  * @param acpSessionId The ACP session ID to remove
  */
-export function clearAcpToSpeakMcpSessionMapping(acpSessionId: string): void {
-  if (acpToSpeakMcpSession.has(acpSessionId)) {
-    acpToSpeakMcpSession.delete(acpSessionId)
-    logApp(`[ACP Session] Cleared ACP → SpeakMCP mapping for ${acpSessionId}`)
+export function clearAcpToNvidiaControlCenterSessionMapping(acpSessionId: string): void {
+  if (acpToNvidiaControlCenterSession.has(acpSessionId)) {
+    acpToNvidiaControlCenterSession.delete(acpSessionId)
+    logApp(`[ACP Session] Cleared ACP → NVIDIA Control Center mapping for ${acpSessionId}`)
   }
 }
 

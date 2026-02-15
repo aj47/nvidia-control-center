@@ -1,8 +1,8 @@
 /**
- * Built-in MCP Tools for SpeakMCP Settings Management
+ * Built-in MCP Tools for NVIDIA Control Center Settings Management
  *
- * These tools are registered as a virtual "speakmcp-settings" server and provide
- * functionality for managing SpeakMCP settings directly from the LLM:
+ * These tools are registered as a virtual "nvidia-cc-settings" server and provide
+ * functionality for managing NVIDIA Control Center settings directly from the LLM:
  * - List MCP servers and their status
  * - Enable/disable MCP servers
  * - List and switch profiles
@@ -254,14 +254,8 @@ const toolHandlers: Record<string, ToolHandler> = {
       ...(profile.modelConfig?.mcpToolsProviderId && {
         mcpToolsProviderId: profile.modelConfig.mcpToolsProviderId,
       }),
-      ...(profile.modelConfig?.mcpToolsOpenaiModel && {
-        mcpToolsOpenaiModel: profile.modelConfig.mcpToolsOpenaiModel,
-      }),
-      ...(profile.modelConfig?.mcpToolsGroqModel && {
-        mcpToolsGroqModel: profile.modelConfig.mcpToolsGroqModel,
-      }),
-      ...(profile.modelConfig?.mcpToolsGeminiModel && {
-        mcpToolsGeminiModel: profile.modelConfig.mcpToolsGeminiModel,
+      ...(profile.modelConfig?.mcpToolsNemotronModel && {
+        mcpToolsNemotronModel: profile.modelConfig.mcpToolsNemotronModel,
       }),
       ...(profile.modelConfig?.currentModelPresetId && {
         currentModelPresetId: profile.modelConfig.currentModelPresetId,
@@ -274,18 +268,8 @@ const toolHandlers: Record<string, ToolHandler> = {
       ...(profile.modelConfig?.transcriptPostProcessingProviderId && {
         transcriptPostProcessingProviderId: profile.modelConfig.transcriptPostProcessingProviderId,
       }),
-      ...(profile.modelConfig?.transcriptPostProcessingOpenaiModel && {
-        transcriptPostProcessingOpenaiModel: profile.modelConfig.transcriptPostProcessingOpenaiModel,
-      }),
-      ...(profile.modelConfig?.transcriptPostProcessingGroqModel && {
-        transcriptPostProcessingGroqModel: profile.modelConfig.transcriptPostProcessingGroqModel,
-      }),
-      ...(profile.modelConfig?.transcriptPostProcessingGeminiModel && {
-        transcriptPostProcessingGeminiModel: profile.modelConfig.transcriptPostProcessingGeminiModel,
-      }),
-      // TTS Provider settings
-      ...(profile.modelConfig?.ttsProviderId && {
-        ttsProviderId: profile.modelConfig.ttsProviderId,
+      ...(profile.modelConfig?.transcriptPostProcessingNemotronModel && {
+        transcriptPostProcessingNemotronModel: profile.modelConfig.transcriptPostProcessingNemotronModel,
       }),
     }
     configStore.save(updatedConfig)
@@ -609,7 +593,6 @@ const toolHandlers: Record<string, ToolHandler> = {
             postProcessingEnabled: postProcessingEnabled,
             postProcessingPromptConfigured: postProcessingPromptConfigured,
             postProcessingEffective: postProcessingEffective,
-            ttsEnabled: config.ttsEnabled ?? true,
             toolApprovalEnabled: config.mcpRequireApprovalBeforeToolCall ?? false,
             verificationEnabled: config.mcpVerifyCompletionEnabled ?? true,
             messageQueueEnabled: config.mcpMessageQueueEnabled ?? true,
@@ -619,12 +602,11 @@ const toolHandlers: Record<string, ToolHandler> = {
               postProcessingEnabled: "When enabled AND a prompt is configured, transcripts are cleaned up and improved using AI",
               postProcessingPromptConfigured: "Whether a post-processing prompt has been configured in settings",
               postProcessingEffective: "True only when post-processing is both enabled AND a prompt is configured",
-              ttsEnabled: "When enabled, assistant responses are read aloud",
               toolApprovalEnabled: "When enabled, a confirmation dialog appears before any tool executes (affects new sessions only)",
               verificationEnabled: "When enabled, the agent verifies task completion before finishing. Disable for faster responses without verification",
               messageQueueEnabled: "When enabled, users can queue messages while the agent is processing",
               parallelToolExecutionEnabled: "When enabled, multiple tool calls from a single LLM response are executed concurrently",
-              whatsappEnabled: "When enabled, allows sending and receiving WhatsApp messages through SpeakMCP",
+              whatsappEnabled: "When enabled, allows sending and receiving WhatsApp messages through NVIDIA Control Center",
             },
           }, null, 2),
         },
@@ -679,40 +661,19 @@ const toolHandlers: Record<string, ToolHandler> = {
     }
   },
 
-  toggle_tts: async (args: Record<string, unknown>): Promise<MCPToolResult> => {
-    const config = configStore.get()
-    const currentValue = config.ttsEnabled ?? true
-
-    // Validate enabled parameter if provided (optional)
-    if (args.enabled !== undefined && typeof args.enabled !== "boolean") {
-      return {
-        content: [{ type: "text", text: JSON.stringify({ success: false, error: "enabled must be a boolean if provided" }) }],
-        isError: true,
-      }
-    }
-
-    // Determine new value: use provided value or toggle
-    const enabled = typeof args.enabled === "boolean" ? args.enabled : !currentValue
-
-    configStore.save({
-      ...config,
-      ttsEnabled: enabled,
-    })
-
+  toggle_tts: async (_args: Record<string, unknown>): Promise<MCPToolResult> => {
+    // TTS is not available - no providers configured
     return {
       content: [
         {
           type: "text",
           text: JSON.stringify({
-            success: true,
-            setting: "ttsEnabled",
-            previousValue: currentValue,
-            newValue: enabled,
-            message: `Text-to-speech has been ${enabled ? "enabled" : "disabled"}`,
+            success: false,
+            error: "Text-to-speech is not available. No TTS providers are configured.",
           }, null, 2),
         },
       ],
-      isError: false,
+      isError: true,
     }
   },
 
@@ -1677,7 +1638,7 @@ const toolHandlers: Record<string, ToolHandler> = {
           type: "text",
           text: JSON.stringify({
             success: false,
-            error: `Server '${serverName}' not found. Use speakmcp-settings:list_mcp_servers to see available servers.`,
+            error: `Server '${serverName}' not found. Use nvidia-cc-settings:list_mcp_servers to see available servers.`,
           }, null, 2),
         }],
         isError: true,
@@ -1702,7 +1663,7 @@ const toolHandlers: Record<string, ToolHandler> = {
           serverName,
           tools: toolList,
           count: toolList.length,
-          hint: "Use speakmcp-settings:get_tool_schema to get full parameter details for a specific tool",
+          hint: "Use nvidia-cc-settings:get_tool_schema to get full parameter details for a specific tool",
         }, null, 2),
       }],
       isError: false,
@@ -1758,7 +1719,7 @@ const toolHandlers: Record<string, ToolHandler> = {
           type: "text",
           text: JSON.stringify({
             success: false,
-            error: `Tool '${toolName}' not found. Use speakmcp-settings:list_server_tools to see available tools for a server.`,
+            error: `Tool '${toolName}' not found. Use nvidia-cc-settings:list_server_tools to see available tools for a server.`,
             availableTools: allTools.slice(0, 10).map((t) => t.name),
             hint: allTools.length > 10 ? `...and ${allTools.length - 10} more tools` : undefined,
           }, null, 2),
@@ -1833,7 +1794,7 @@ const toolHandlers: Record<string, ToolHandler> = {
 
 /**
  * Execute a built-in tool by name
- * @param toolName The full tool name (e.g., "speakmcp-settings:list_mcp_servers")
+ * @param toolName The full tool name (e.g., "nvidia-cc-settings:list_mcp_servers")
  * @param args The tool arguments
  * @param sessionId Optional session ID for ACP router tools
  * @returns The tool result
@@ -1891,7 +1852,7 @@ export async function executeBuiltinTool(
 
 /**
  * Check if a tool name is a built-in tool
- * This includes both speakmcp-settings tools and ACP router tools (speakmcp-builtin)
+ * This includes both nvidia-cc-settings tools and ACP router tools (nvidia-cc-builtin)
  */
 export function isBuiltinTool(toolName: string): boolean {
   return toolName.startsWith(`${BUILTIN_SERVER_NAME}:`) || isACPRouterTool(toolName)

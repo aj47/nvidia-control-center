@@ -25,10 +25,8 @@ function redact(value?: string) {
 }
 
 function resolveActiveModelId(cfg: any): string {
-  const provider = cfg.mcpToolsProviderId || "openai"
-  if (provider === "openai") return cfg.mcpToolsOpenaiModel || "openai"
-  if (provider === "groq") return cfg.mcpToolsGroqModel || "groq"
-  if (provider === "gemini") return cfg.mcpToolsGeminiModel || "gemini"
+  const provider = cfg.mcpToolsProviderId || "nemotron"
+  if (provider === "nemotron") return cfg.mcpToolsNemotronModel || "nvidia/llama-3.1-nemotron-70b-instruct"
   return String(provider)
 }
 
@@ -550,7 +548,7 @@ export async function startRemoteServer() {
       const params = req.params as { providerId: string }
       const providerId = params.providerId
 
-      const validProviders = ["openai", "groq", "gemini"]
+      const validProviders = ["nemotron"]
       if (!validProviders.includes(providerId)) {
         return reply.code(400).send({ error: `Invalid provider: ${providerId}. Valid providers: ${validProviders.join(", ")}` })
       }
@@ -701,8 +699,8 @@ export async function startRemoteServer() {
     try {
       const serverStatus = mcpService.getServerStatus()
       const servers = Object.entries(serverStatus)
-        // Filter out the built-in speakmcp-settings pseudo-server as it's not user-toggleable
-        .filter(([name]) => name !== "speakmcp-settings")
+        // Filter out the built-in nvidia-cc-settings pseudo-server as it's not user-toggleable
+        .filter(([name]) => name !== "nvidia-cc-settings")
         .map(([name, status]) => ({
           name,
           connected: status.connected,
@@ -773,10 +771,8 @@ export async function startRemoteServer() {
 
       return reply.send({
         // Model settings
-        mcpToolsProviderId: cfg.mcpToolsProviderId || "openai",
-        mcpToolsOpenaiModel: cfg.mcpToolsOpenaiModel,
-        mcpToolsGroqModel: cfg.mcpToolsGroqModel,
-        mcpToolsGeminiModel: cfg.mcpToolsGeminiModel,
+        mcpToolsProviderId: cfg.mcpToolsProviderId || "nemotron",
+        mcpToolsNemotronModel: cfg.mcpToolsNemotronModel,
         // OpenAI compatible preset settings
         currentModelPresetId: cfg.currentModelPresetId || DEFAULT_MODEL_PRESET_ID,
         availablePresets: [...mergedPresets, ...customPresets].map(p => ({
@@ -788,7 +784,6 @@ export async function startRemoteServer() {
         // Feature toggles
         transcriptPostProcessingEnabled: cfg.transcriptPostProcessingEnabled ?? true,
         mcpRequireApprovalBeforeToolCall: cfg.mcpRequireApprovalBeforeToolCall ?? false,
-        ttsEnabled: cfg.ttsEnabled ?? true,
         whatsappEnabled: cfg.whatsappEnabled ?? false,
         // Agent settings
         mcpMaxIterations: cfg.mcpMaxIterations ?? 10,
@@ -813,9 +808,6 @@ export async function startRemoteServer() {
       if (typeof body.mcpRequireApprovalBeforeToolCall === "boolean") {
         updates.mcpRequireApprovalBeforeToolCall = body.mcpRequireApprovalBeforeToolCall
       }
-      if (typeof body.ttsEnabled === "boolean") {
-        updates.ttsEnabled = body.ttsEnabled
-      }
       if (typeof body.whatsappEnabled === "boolean") {
         updates.whatsappEnabled = body.whatsappEnabled
       }
@@ -824,18 +816,12 @@ export async function startRemoteServer() {
         updates.mcpMaxIterations = Math.floor(body.mcpMaxIterations)
       }
       // Model settings
-      const validProviders = ["openai", "groq", "gemini"]
+      const validProviders = ["nemotron"]
       if (typeof body.mcpToolsProviderId === "string" && validProviders.includes(body.mcpToolsProviderId)) {
-        updates.mcpToolsProviderId = body.mcpToolsProviderId as "openai" | "groq" | "gemini"
+        updates.mcpToolsProviderId = body.mcpToolsProviderId as "nemotron"
       }
-      if (typeof body.mcpToolsOpenaiModel === "string") {
-        updates.mcpToolsOpenaiModel = body.mcpToolsOpenaiModel
-      }
-      if (typeof body.mcpToolsGroqModel === "string") {
-        updates.mcpToolsGroqModel = body.mcpToolsGroqModel
-      }
-      if (typeof body.mcpToolsGeminiModel === "string") {
-        updates.mcpToolsGeminiModel = body.mcpToolsGeminiModel
+      if (typeof body.mcpToolsNemotronModel === "string") {
+        updates.mcpToolsNemotronModel = body.mcpToolsNemotronModel
       }
       // OpenAI compatible preset - validate against known preset IDs
       if (typeof body.currentModelPresetId === "string") {
@@ -1321,7 +1307,7 @@ export async function startRemoteServer() {
     }
   })
 
-  // MCP Protocol Endpoints - Expose SpeakMCP builtin tools to external agents
+  // MCP Protocol Endpoints - Expose NVIDIA Control Center builtin tools to external agents
   // These endpoints implement a simplified MCP-over-HTTP protocol
 
   // POST /mcp/tools/list - List all available builtin tools

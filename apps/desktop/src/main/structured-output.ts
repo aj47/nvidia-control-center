@@ -59,20 +59,15 @@ const toolCallResponseSchema: OpenAI.ResponseFormatJSONSchema["json_schema"] = {
   strict: true,
 }
 
-function createOpenAIClient(providerId?: string): OpenAI {
+function createOpenAIClient(_providerId?: string): OpenAI {
   const config = configStore.get()
-  const chatProviderId = providerId || config.mcpToolsProviderId || "openai"
 
-  const baseURL =
-    chatProviderId === "groq"
-      ? config.groqBaseUrl || "https://api.groq.com/openai/v1"
-      : config.openaiBaseUrl || "https://api.openai.com/v1"
-
-  const apiKey =
-    chatProviderId === "groq" ? config.groqApiKey : config.openaiApiKey
+  // Use Nemotron via NVIDIA API (OpenAI-compatible)
+  const baseURL = config.nemotronBaseUrl || "https://integrate.api.nvidia.com/v1"
+  const apiKey = config.nemotronApiKey
 
   if (!apiKey) {
-    throw new Error(`API key is required for ${chatProviderId}`)
+    throw new Error("NVIDIA API key is required for Nemotron")
   }
 
   return new OpenAI({
@@ -85,21 +80,16 @@ function createOpenAIClient(providerId?: string): OpenAI {
  * Get the appropriate model for the provider
  */
 function getModel(
-  providerId?: string,
+  _providerId?: string,
   context: "mcp" | "transcript" = "mcp",
 ): string {
   const config = configStore.get()
-  const chatProviderId = providerId || config.mcpToolsProviderId || "openai"
 
   if (context === "transcript") {
-    return chatProviderId === "groq"
-      ? config.transcriptPostProcessingGroqModel || "gemma2-9b-it"
-      : config.transcriptPostProcessingOpenaiModel || "gpt-4o-mini"
+    return config.transcriptPostProcessingNemotronModel || "nvidia/llama-3.1-nemotron-70b-instruct"
   }
 
-  return chatProviderId === "groq"
-    ? config.mcpToolsGroqModel || "llama-3.3-70b-versatile"
-    : config.mcpToolsOpenaiModel || "gpt-4o-mini"
+  return config.mcpToolsNemotronModel || "nvidia/llama-3.1-nemotron-70b-instruct"
 }
 
 /**
@@ -233,8 +223,8 @@ export async function makeTextCompletion(
   providerId?: string,
 ): Promise<string> {
   const config = configStore.get()
-  const chatProviderId =
-    providerId || config.transcriptPostProcessingProviderId || "openai"
+  const _chatProviderId =
+    providerId || config.transcriptPostProcessingProviderId || "nemotron"
 
   const model = getModel(providerId, "transcript")
   const client = createOpenAIClient(providerId)

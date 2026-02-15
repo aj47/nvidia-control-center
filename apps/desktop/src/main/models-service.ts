@@ -1,7 +1,6 @@
 import { configStore } from "./config"
 import { diagnosticsService } from "./diagnostics"
 import { fetchModelsDevData, getModelFromModelsDevByProviderId } from "./models-dev-service"
-import type { ModelsDevModel } from "./models-dev-service"
 import type { ModelInfo, EnhancedModelInfo } from "../shared/types"
 
 // Re-export ModelInfo for backward compatibility
@@ -21,39 +20,28 @@ const CACHE_DURATION = 5 * 60 * 1000
 
 /**
  * Map our provider IDs to models.dev provider IDs
- * @param providerId - Our provider ID (openai, groq, gemini)
- * @param baseUrl - Optional base URL to detect OpenRouter
+ * @param providerId - Our provider ID (nemotron)
  * @returns The models.dev provider ID
  */
-function mapToModelsDevProviderId(providerId: string, baseUrl?: string): string {
-  // Check if using OpenRouter
-  if (providerId === "openai" && baseUrl?.includes("openrouter.ai")) {
-    return "openrouter"
-  }
-
+function mapToModelsDevProviderId(providerId: string): string {
   // Map our provider IDs to models.dev provider IDs
-  const providerMap: Record<string, string> = {
-    openai: "openai",
-    groq: "groq",
-    gemini: "google",
+  if (providerId === "nemotron") {
+    return "nvidia"
   }
-
-  return providerMap[providerId] || providerId
+  return providerId
 }
 
 /**
  * Enhance a ModelInfo object with data from models.dev
  * @param model - The basic ModelInfo to enhance
- * @param providerId - Our provider ID (openai, groq, gemini)
- * @param baseUrl - Optional base URL to detect OpenRouter
+ * @param providerId - Our provider ID (nemotron)
  * @returns Enhanced model info with pricing and capabilities
  */
 function enhanceModelWithModelsDevData(
   model: ModelInfo,
   providerId: string,
-  baseUrl?: string
 ): EnhancedModelInfo {
-  const modelsDevProviderId = mapToModelsDevProviderId(providerId, baseUrl)
+  const modelsDevProviderId = mapToModelsDevProviderId(providerId)
   const modelsDevModel = getModelFromModelsDevByProviderId(model.id, modelsDevProviderId)
 
   if (!modelsDevModel) {
@@ -104,29 +92,25 @@ function enhanceModelWithModelsDevData(
   return enhanced
 }
 
-async function fetchOpenAIModels(
+/**
+ * Fetch available models from NVIDIA NIM API (Nemotron)
+ * NVIDIA NIM uses OpenAI-compatible API at https://integrate.api.nvidia.com/v1
+ */
+async function fetchNemotronModels(
   baseUrl?: string,
   apiKey?: string,
 ): Promise<ModelInfo[]> {
   if (!apiKey) {
-    throw new Error("OpenAI API key is required")
+    throw new Error("NVIDIA API key is required")
   }
 
-  const url = `${baseUrl || "https://api.openai.com/v1"}/models`
-  const isOpenRouter = baseUrl?.includes("openrouter.ai")
-  const isCerebras = baseUrl?.includes("cerebras.ai")
-  const isNativeOpenAI =
-    !isOpenRouter && !isCerebras && (!baseUrl || baseUrl.includes("api.openai.com"))
-  const isGenericOpenAICompatible =
-    !isOpenRouter && !isCerebras && !!baseUrl && !baseUrl.includes("api.openai.com")
+  const url = `${baseUrl || "https://integrate.api.nvidia.com/v1"}/models`
 
   diagnosticsService.logInfo(
     "models-service",
-    `Fetching models from: ${url}`,
+    `Fetching Nemotron models from: ${url}`,
     {
       baseUrl,
-      isOpenRouter,
-      isCerebras,
       hasApiKey: !!apiKey,
       apiKeyPrefix: apiKey ? `${apiKey.substring(0, 8)}...` : "none",
     },
@@ -139,22 +123,11 @@ async function fetchOpenAIModels(
     },
   })
 
-  diagnosticsService.logInfo(
-    "models-service",
-    `Models API response: ${response.status} ${response.statusText}`,
-    {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-    },
-  )
-
   if (!response.ok) {
     const errorText = await response.text()
     diagnosticsService.logError(
       "models-service",
-      `Models API request failed`,
+      `Nemotron models API request failed`,
       {
         url,
         status: response.status,
@@ -169,219 +142,38 @@ async function fetchOpenAIModels(
 
   diagnosticsService.logInfo(
     "models-service",
-    `Models API response data`,
+    `Nemotron models API response`,
     {
       url,
-      dataKeys: Object.keys(data),
       modelsCount: data.data?.length || 0,
       firstFewModels: data.data?.slice(0, 3).map(m => ({ id: m.id, name: m.name || formatModelName(m.id) })) || [],
     },
   )
 
-  let filteredModels = data.data
-
-  if (isOpenRouter) {
-    filteredModels = data.data.filter(
-      (model) =>
-        !model.id.includes(":ft-") &&
-        !model.id.includes("instruct-beta") &&
-        !model.id.includes("preview") &&
-        model.id.length > 0,
-    )
-  } else if (isCerebras) {
-    filteredModels = data.data.filter(
-      (model) =>
-        model.id && model.id.length > 0,
-    )
-
-    diagnosticsService.logInfo(
-      "models-service",
-      `Cerebras models after filtering`,
-      {
-        totalModels: data.data.length,
-        filteredCount: filteredModels.length,
-        modelIds: filteredModels.map(m => m.id),
-      },
-    )
-  } else if (isNativeOpenAI) {
-    filteredModels = data.data.filter(
-      (model) =>
-        !model.id.includes(":") &&
-        !model.id.includes("instruct") &&
-        (model.id.includes("gpt") || model.id.includes("o1")),
-    )
-  } else if (isGenericOpenAICompatible) {
-    filteredModels = data.data.filter(
-      (model) => model.id && model.id.length > 0,
-    )
-  } else {
-    // Fallback: basic validation
-    filteredModels = data.data.filter(
-      (model) => model.id && model.id.length > 0,
-    )
-  }
-
-  // Models that support speech-to-text transcription (OpenAI)
-  const openaiTranscriptionModels = ["whisper-1"]
-
-  const finalModels = filteredModels
-    .map((model) => ({
-      id: model.id,
-      name: formatModelName(model.id),
-      description: model.description,
-      context_length: model.context_length,
-      created: model.created,
-      supportsTranscription: openaiTranscriptionModels.some(tm => model.id.includes(tm)),
-    }))
-    .sort((a, b) => {
-      if (isOpenRouter) {
-        // For OpenRouter, sort by model family and capability
-        const getOpenRouterPriority = (id: string) => {
-          // Prioritize popular/capable models
-          if (id.includes("gpt-4o")) return 0
-          if (id.includes("claude-3.5-sonnet")) return 1
-          if (id.includes("claude-3-opus")) return 2
-          if (id.includes("gpt-4")) return 3
-          if (id.includes("claude")) return 4
-          if (id.includes("llama-3.1") && id.includes("405b")) return 5
-          if (id.includes("llama-3.1") && id.includes("70b")) return 6
-          if (id.includes("gemini-1.5-pro")) return 7
-          if (id.includes("o1")) return 8
-          if (id.includes("gpt-3.5")) return 9
-          return 10
-        }
-        const priorityDiff =
-          getOpenRouterPriority(a.id) - getOpenRouterPriority(b.id)
-        if (priorityDiff !== 0) return priorityDiff
-        return a.name.localeCompare(b.name)
-      } else if (isCerebras) {
-        // For Cerebras, sort alphabetically
-        return a.name.localeCompare(b.name)
-      } else {
-        // For native OpenAI, use original sorting
-        const getModelPriority = (id: string) => {
-          if (id.includes("o1")) return 0
-          if (id.includes("gpt-4")) return 1
-          if (id.includes("gpt-3.5")) return 2
-          return 3
-        }
-        return getModelPriority(a.id) - getModelPriority(b.id)
-      }
-    })
-
-  const providerLabel = isOpenRouter
-    ? "OpenRouter"
-    : isCerebras
-      ? "Cerebras"
-      : isNativeOpenAI
-        ? "OpenAI"
-        : "OpenAI-compatible"
-
-  // Log final results
-  diagnosticsService.logInfo(
-    "models-service",
-    `Final models list for ${providerLabel}`,
-    {
-      url,
-      totalCount: finalModels.length,
-      modelIds: finalModels.map(m => m.id),
-      modelNames: finalModels.map(m => m.name),
-    },
+  // Filter to Nemotron and related NVIDIA models
+  const filteredModels = data.data.filter(
+    (model) =>
+      model.id &&
+      model.id.length > 0 &&
+      (model.id.includes("nemotron") || model.id.startsWith("nvidia/"))
   )
 
-  return finalModels
-}
-
-/**
- * Fetch available models from Groq API
- */
-async function fetchGroqModels(
-  baseUrl?: string,
-  apiKey?: string,
-): Promise<ModelInfo[]> {
-  if (!apiKey) {
-    throw new Error("Groq API key is required")
-  }
-
-  const url = `${baseUrl || "https://api.groq.com/openai/v1"}/models`
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`HTTP ${response.status}: ${errorText}`)
-  }
-
-  const data: ModelsResponse = await response.json()
-
-  // Models that support speech-to-text transcription
-  const transcriptionModels = ["whisper-large-v3", "whisper-large-v3-turbo", "distil-whisper-large-v3-en"]
-
-  return data.data
+  return filteredModels
     .map((model) => ({
       id: model.id,
       name: formatModelName(model.id),
       description: model.description,
       context_length: model.context_length,
       created: model.created,
-      supportsTranscription: transcriptionModels.some(tm => model.id.includes(tm)),
     }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-}
-
-/**
- * Fetch available models from Gemini API
- */
-async function fetchGeminiModels(
-  baseUrl?: string,
-  apiKey?: string,
-): Promise<ModelInfo[]> {
-  if (!apiKey) {
-    throw new Error("Gemini API key is required")
-  }
-
-  const url = `${baseUrl || "https://generativelanguage.googleapis.com"}/v1beta/models?key=${apiKey}`
-
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`HTTP ${response.status}: ${errorText}`)
-  }
-
-  const data = await response.json()
-
-  // Gemini API returns models in a different format
-  if (!data.models || !Array.isArray(data.models)) {
-    return []
-  }
-
-  return data.models
-    .filter(
-      (model: any) =>
-        model.name &&
-        model.name.includes("gemini") &&
-        model.supportedGenerationMethods?.includes("generateContent"),
-    )
-    .map((model: any) => {
-      const modelId = model.name.split("/").pop()
-      return {
-        id: modelId,
-        name: formatModelName(modelId),
-        description: model.description,
-        context_length: model.inputTokenLimit,
-      }
+    .sort((a, b) => {
+      // Prioritize Nemotron models
+      const aIsNemotron = a.id.includes("nemotron")
+      const bIsNemotron = b.id.includes("nemotron")
+      if (aIsNemotron && !bIsNemotron) return -1
+      if (!aIsNemotron && bIsNemotron) return 1
+      return a.name.localeCompare(b.name)
     })
-    .sort((a: ModelInfo, b: ModelInfo) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -433,6 +225,13 @@ function formatModelName(modelId: string): string {
     "mistralai/mistral-7b-instruct": "Mistral 7B Instruct",
     "mistralai/mixtral-8x7b-instruct": "Mixtral 8x7B Instruct",
     "mistralai/mixtral-8x22b-instruct": "Mixtral 8x22B Instruct",
+
+    // NVIDIA Nemotron models
+    "nvidia/llama-3.1-nemotron-70b-instruct": "Nemotron 70B Instruct",
+    "nvidia/llama-3.1-nemotron-nano-8b-v1": "Nemotron Nano 8B",
+    "nvidia/llama-3.1-nemotron-ultra-253b-v1": "Nemotron Ultra 253B",
+    "nvidia/nemotron-4-340b-instruct": "Nemotron-4 340B Instruct",
+    "nvidia/nemotron-mini-4b-instruct": "Nemotron Mini 4B Instruct",
   }
 
   // Check for exact match first
@@ -451,6 +250,7 @@ function formatModelName(modelId: string): string {
       mistralai: "Mistral",
       cohere: "Cohere",
       perplexity: "Perplexity",
+      nvidia: "NVIDIA",
     }
 
     const formattedProvider =
@@ -496,26 +296,12 @@ export async function fetchAvailableModels(
   // Include base URL and API key hash in cache key so changing credentials invalidates cache
   // This ensures switching between presets with the same URL but different keys fetches fresh models
   const cacheKeyParts = [providerId]
-  if (providerId === "openai") {
-    const baseUrl = config.openaiBaseUrl || "https://api.openai.com/v1"
-    const apiKey = config.openaiApiKey || ""
+  if (providerId === "nemotron") {
+    const baseUrl = config.nemotronBaseUrl || "https://integrate.api.nvidia.com/v1"
+    const apiKey = config.nemotronApiKey || ""
     cacheKeyParts.push(baseUrl)
     // Include a simple hash of API key (first 8 chars) to invalidate cache on key change
     // without exposing the full key in logs/debug output
-    if (apiKey) {
-      cacheKeyParts.push(apiKey.slice(0, 8))
-    }
-  } else if (providerId === "groq") {
-    const baseUrl = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-    const apiKey = config.groqApiKey || ""
-    cacheKeyParts.push(baseUrl)
-    if (apiKey) {
-      cacheKeyParts.push(apiKey.slice(0, 8))
-    }
-  } else if (providerId === "gemini") {
-    const baseUrl = config.geminiBaseUrl || "https://generativelanguage.googleapis.com"
-    const apiKey = config.geminiApiKey || ""
-    cacheKeyParts.push(baseUrl)
     if (apiKey) {
       cacheKeyParts.push(apiKey.slice(0, 8))
     }
@@ -561,31 +347,17 @@ export async function fetchAvailableModels(
       `Config for ${providerId}`,
       {
         providerId,
-        openaiBaseUrl: config.openaiBaseUrl,
-        hasOpenaiApiKey: !!config.openaiApiKey,
-        hasGroqApiKey: !!config.groqApiKey,
-        hasGeminiApiKey: !!config.geminiApiKey,
+        hasNemotronApiKey: !!config.nemotronApiKey,
       },
     )
 
-    // Get base URL for provider to detect OpenRouter
-    let baseUrl: string | undefined
-    switch (providerId) {
-      case "openai":
-        baseUrl = config.openaiBaseUrl
-        models = await fetchOpenAIModels(baseUrl, config.openaiApiKey)
-        break
-      case "groq":
-        baseUrl = config.groqBaseUrl
-        models = await fetchGroqModels(baseUrl, config.groqApiKey)
-        break
-      case "gemini":
-        baseUrl = config.geminiBaseUrl
-        models = await fetchGeminiModels(baseUrl, config.geminiApiKey)
-        break
-      default:
-        throw new Error(`Unsupported provider: ${providerId}`)
+    // Only nemotron provider is supported
+    if (providerId !== "nemotron") {
+      throw new Error(`Unsupported provider: ${providerId}`)
     }
+
+    const baseUrl = config.nemotronBaseUrl
+    models = await fetchNemotronModels(baseUrl, config.nemotronApiKey)
 
     // Trigger models.dev cache population in background (don't await)
     fetchModelsDevData().catch((err) => {
@@ -598,7 +370,7 @@ export async function fetchAvailableModels(
 
     // Enhance models with models.dev data
     const enhancedModels = models.map((model) =>
-      enhanceModelWithModelsDevData(model, providerId, baseUrl)
+      enhanceModelWithModelsDevData(model, providerId)
     )
 
     // Log successful fetch
@@ -677,18 +449,9 @@ export async function fetchAvailableModels(
  * models.dev is the primary source for fallback model data.
  */
 const HARDCODED_FALLBACK_MODELS: Record<string, ModelInfo[]> = {
-  openai: [
-    { id: "gpt-4o-mini", name: "GPT-4o Mini" },
-  ],
-  openrouter: [
-    { id: "openai/gpt-4o-mini", name: "GPT-4o Mini (OpenAI)" },
-    { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet (Anthropic)" },
-  ],
-  groq: [
-    { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B Versatile" },
-  ],
-  google: [
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash" },
+  nvidia: [
+    { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "Nemotron 70B Instruct" },
+    { id: "nvidia/llama-3.1-nemotron-nano-8b-v1", name: "Nemotron Nano 8B" },
   ],
 }
 
@@ -697,11 +460,7 @@ const HARDCODED_FALLBACK_MODELS: Record<string, ModelInfo[]> = {
  * First tries to get models from models.dev cache, then falls back to hardcoded models.
  */
 async function getFallbackModelsAsync(providerId: string): Promise<ModelInfo[]> {
-  const config = configStore.get()
-  const isOpenRouter =
-    providerId === "openai" && config.openaiBaseUrl?.includes("openrouter.ai")
-
-  const modelsDevProviderId = isOpenRouter ? "openrouter" : mapToModelsDevProviderId(providerId)
+  const modelsDevProviderId = mapToModelsDevProviderId(providerId)
 
   try {
     // Try to get models from models.dev cache
@@ -715,7 +474,7 @@ async function getFallbackModelsAsync(providerId: string): Promise<ModelInfo[]> 
           name: modelData.name || formatModelName(modelId),
           context_length: modelData.limit?.context,
         }
-        return enhanceModelWithModelsDevData(model, providerId, isOpenRouter ? config.openaiBaseUrl : undefined)
+        return enhanceModelWithModelsDevData(model, providerId)
       })
 
       diagnosticsService.logInfo(
@@ -735,8 +494,7 @@ async function getFallbackModelsAsync(providerId: string): Promise<ModelInfo[]> 
   }
 
   // Fall back to hardcoded models
-  const hardcodedKey = isOpenRouter ? "openrouter" : modelsDevProviderId
-  return HARDCODED_FALLBACK_MODELS[hardcodedKey] || HARDCODED_FALLBACK_MODELS[providerId] || []
+  return HARDCODED_FALLBACK_MODELS[modelsDevProviderId] || []
 }
 
 /**
@@ -744,13 +502,9 @@ async function getFallbackModelsAsync(providerId: string): Promise<ModelInfo[]> 
  * This uses the synchronous getModelFromModelsDevByProviderId which requires cache to be loaded
  */
 function getFallbackModels(providerId: string): ModelInfo[] {
-  const config = configStore.get()
-  const isOpenRouter =
-    providerId === "openai" && config.openaiBaseUrl?.includes("openrouter.ai")
-
   // Use hardcoded fallbacks for synchronous access
-  const hardcodedKey = isOpenRouter ? "openrouter" : mapToModelsDevProviderId(providerId)
-  return HARDCODED_FALLBACK_MODELS[hardcodedKey] || HARDCODED_FALLBACK_MODELS[providerId] || []
+  const modelsDevProviderId = mapToModelsDevProviderId(providerId)
+  return HARDCODED_FALLBACK_MODELS[modelsDevProviderId] || []
 }
 
 /**
@@ -772,9 +526,9 @@ export async function fetchModelsForPreset(
     throw new Error("Base URL and API key are required")
   }
 
-  // Use the same fetchOpenAIModels function but with the preset's credentials
+  // Use fetchNemotronModels since we only support Nemotron provider
   try {
-    const models = await fetchOpenAIModels(baseUrl, apiKey)
+    const models = await fetchNemotronModels(baseUrl, apiKey)
     return models
   } catch (error) {
     diagnosticsService.logError(

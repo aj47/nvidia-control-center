@@ -1,26 +1,26 @@
-# WhatsApp MCP Server for SpeakMCP
+# WhatsApp MCP Server for NVIDIA Control Center
 
-This MCP (Model Context Protocol) server enables WhatsApp messaging capabilities for SpeakMCP. It allows AI agents to send and receive WhatsApp messages, making your voice assistant accessible via WhatsApp.
+This MCP (Model Context Protocol) server enables WhatsApp messaging capabilities for NVIDIA Control Center. It allows AI agents to send and receive WhatsApp messages, making your voice assistant accessible via WhatsApp.
 
 ## Features
 
 - **Send Messages**: Send WhatsApp messages to any phone number
 - **Receive Messages**: Get notified of incoming messages
 - **Chat History**: View recent messages from any chat
-- **Auto-Reply**: Optionally auto-reply to messages using SpeakMCP's AI
+- **Auto-Reply**: Optionally auto-reply to messages using NVIDIA Control Center's AI
 - **Persistent Auth**: QR code authentication is saved for reconnection
 
 ## Prerequisites
 
 - Node.js 20+
 - A WhatsApp account with the mobile app installed
-- SpeakMCP desktop app running (for auto-reply feature)
+- NVIDIA Control Center desktop app running (for auto-reply feature)
 
 ## Installation
 
-### Option 1: Add to SpeakMCP (Recommended)
+### Option 1: Add to NVIDIA Control Center (Recommended)
 
-1. Open SpeakMCP Settings → Tools → MCP Servers
+1. Open NVIDIA Control Center Settings → Tools → MCP Servers
 2. Click "Add Server" and enter:
    - Name: `whatsapp`
    - Command: `node`
@@ -29,14 +29,14 @@ This MCP (Model Context Protocol) server enables WhatsApp messaging capabilities
 
 ### Option 2: Manual Configuration
 
-Add to your MCP config file (`~/.speakmcp/mcp-config.json`):
+Add to your MCP config file (`~/.nvidia-control-center/mcp-config.json`):
 
 ```json
 {
   "mcpServers": {
     "whatsapp": {
       "command": "node",
-      "args": ["/path/to/speakmcp/packages/mcp-whatsapp/dist/index.js"],
+      "args": ["/path/to/nvidia-control-center/packages/mcp-whatsapp/dist/index.js"],
       "env": {
         "WHATSAPP_ALLOW_FROM": "14155551234,14155555678",
         "WHATSAPP_LOG_MESSAGES": "true"
@@ -52,16 +52,16 @@ Configure via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `WHATSAPP_AUTH_DIR` | Directory for auth credentials | `~/.speakmcp/whatsapp-auth` |
+| `WHATSAPP_AUTH_DIR` | Directory for auth credentials | `~/.nvidia-control-center/whatsapp-auth` |
 | `WHATSAPP_ALLOW_FROM` | Comma-separated phone numbers allowed to message | (all allowed) |
-| `WHATSAPP_AUTO_REPLY` | Auto-reply to messages via SpeakMCP | `false` |
-| `WHATSAPP_CALLBACK_URL` | SpeakMCP API URL for auto-reply | - |
-| `WHATSAPP_CALLBACK_API_KEY` | SpeakMCP API key for auto-reply | - |
+| `WHATSAPP_AUTO_REPLY` | Auto-reply to messages via NVIDIA Control Center | `false` |
+| `WHATSAPP_CALLBACK_URL` | NVIDIA Control Center API URL for auto-reply | - |
+| `WHATSAPP_CALLBACK_API_KEY` | NVIDIA Control Center API key for auto-reply | - |
 | `WHATSAPP_LOG_MESSAGES` | Log message content (privacy) | `false` |
 
 ## First-Time Setup
 
-1. Start SpeakMCP with the WhatsApp MCP server configured
+1. Start NVIDIA Control Center with the WhatsApp MCP server configured
 2. Ask the AI: "Connect to WhatsApp"
 3. A QR code will appear in the terminal/logs
 4. Open WhatsApp on your phone → Settings → Linked Devices → Link a Device
@@ -118,7 +118,7 @@ Logout and clear all credentials.
 
 To enable automatic replies to WhatsApp messages:
 
-1. Enable SpeakMCP's remote server (Settings → Remote Server)
+1. Enable NVIDIA Control Center's remote server (Settings → Remote Server)
 2. Note the API key and port
 3. Configure the WhatsApp MCP server:
 
@@ -139,7 +139,7 @@ To enable automatic replies to WhatsApp messages:
 }
 ```
 
-Now when someone on the allowlist messages you, SpeakMCP will automatically generate a response!
+Now when someone on the allowlist messages you, NVIDIA Control Center will automatically generate a response!
 
 ## Security Considerations
 
@@ -151,7 +151,7 @@ Now when someone on the allowlist messages you, SpeakMCP will automatically gene
 ## Troubleshooting
 
 ### QR Code Not Appearing
-- Check the terminal/logs where SpeakMCP is running
+- Check the terminal/logs where NVIDIA Control Center is running
 - Try disconnecting and reconnecting
 
 ### Connection Keeps Dropping
@@ -184,4 +184,4 @@ pnpm dev
 
 ## License
 
-MIT - Part of the SpeakMCP project.
+MIT - Part of the NVIDIA Control Center project.

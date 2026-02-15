@@ -12,8 +12,8 @@ pnpm dev                  # Start Electron app in dev mode
 
 # Testing
 pnpm test                 # Run all tests (vitest)
-pnpm --filter @speakmcp/desktop test:run  # Run desktop tests once
-pnpm --filter @speakmcp/desktop test      # Run desktop tests in watch mode
+pnpm --filter @nvidia-cc/desktop test:run  # Run desktop tests once
+pnpm --filter @nvidia-cc/desktop test      # Run desktop tests in watch mode
 
 # Type checking
 pnpm typecheck            # Type check all packages
@@ -23,9 +23,9 @@ pnpm lint                 # Lint all packages
 
 # Production builds
 pnpm build                # Full production build (typecheck + test + build)
-pnpm --filter @speakmcp/desktop build:mac  # macOS build
-pnpm --filter @speakmcp/desktop build:win  # Windows build
-pnpm --filter @speakmcp/desktop build:linux # Linux build
+pnpm --filter @nvidia-cc/desktop build:mac  # macOS build
+pnpm --filter @nvidia-cc/desktop build:win  # Windows build
+pnpm --filter @nvidia-cc/desktop build:linux # Linux build
 ```
 
 ## Debug Modes
@@ -69,7 +69,7 @@ REMOTE_DEBUGGING_PORT=9222 pnpm dev -- -d
 - `types.ts` - TypeScript types shared between main/renderer
 - `mcp-utils.ts` - MCP config parsing utilities
 
-**Rust Binary** (`apps/desktop/speakmcp-rs/`):
+**Rust Binary** (`apps/desktop/nvidia-cc-rs/`):
 - Native keyboard monitoring and text injection
 - Built separately via `pnpm build-rs`
 
@@ -99,8 +99,8 @@ The app functions as an MCP client that can connect to multiple servers:
 Tests use Vitest and are colocated with source files (`.test.ts`):
 ```bash
 # Run specific test file
-pnpm --filter @speakmcp/desktop exec vitest run src/main/llm-fetch.test.ts
+pnpm --filter @nvidia-cc/desktop exec vitest run src/main/llm-fetch.test.ts
 
 # Run tests matching pattern
-pnpm --filter @speakmcp/desktop exec vitest run -t "pattern"
+pnpm --filter @nvidia-cc/desktop exec vitest run -t "pattern"
 ```

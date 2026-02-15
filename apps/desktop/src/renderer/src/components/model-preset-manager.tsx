@@ -135,16 +135,15 @@ export function ModelPresetManager() {
     if (preset) {
       const updates: Partial<Config> = {
         currentModelPresetId: presetId,
-        // Also update the legacy fields for backward compatibility
-        openaiBaseUrl: preset.baseUrl,
-        openaiApiKey: preset.apiKey,
+        // Also update the Nemotron API key from preset
+        nemotronApiKey: preset.apiKey,
       }
       // Apply model preferences if they are set on the preset
       if (preset.mcpToolsModel) {
-        updates.mcpToolsOpenaiModel = preset.mcpToolsModel
+        updates.mcpToolsNemotronModel = preset.mcpToolsModel
       }
       if (preset.transcriptProcessingModel) {
-        updates.transcriptPostProcessingOpenaiModel = preset.transcriptProcessingModel
+        updates.transcriptPostProcessingNemotronModel = preset.transcriptProcessingModel
       }
       // Apply summarization model if set on the preset (dual-model mode)
       if (preset.summarizationModel) {
@@ -207,10 +206,9 @@ export function ModelPresetManager() {
 
     const updates: Partial<Config> = { modelPresets: finalPresets }
 
-    // If editing the current preset, also update legacy fields
+    // If editing the current preset, also update Nemotron API key
     if (editingPreset.id === currentPresetId) {
-      updates.openaiBaseUrl = editingPreset.baseUrl
-      updates.openaiApiKey = editingPreset.apiKey
+      updates.nemotronApiKey = editingPreset.apiKey
     }
 
     saveConfig(updates)
@@ -233,9 +231,8 @@ export function ModelPresetManager() {
       if (preset.id === currentPresetId) {
         const defaultPreset = allPresets.find(p => p.id === DEFAULT_MODEL_PRESET_ID)
         updates.currentModelPresetId = DEFAULT_MODEL_PRESET_ID
-        // Also update the legacy fields for backward compatibility
-        updates.openaiBaseUrl = defaultPreset?.baseUrl || ""
-        updates.openaiApiKey = defaultPreset?.apiKey || ""
+        // Also update the Nemotron API key
+        updates.nemotronApiKey = defaultPreset?.apiKey || ""
       }
       saveConfig(updates)
       toast.success("Preset deleted")

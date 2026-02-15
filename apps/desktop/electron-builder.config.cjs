@@ -84,8 +84,8 @@ try {
 
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
-  appId: "app.speakmcp",
-  productName: "SpeakMCP",
+  appId: "app.nvidia-control-center",
+  productName: "NVIDIA Control Center",
   icon: "build/icon.png",
   directories: {
     buildResources: "build",
@@ -101,12 +101,12 @@ module.exports = {
     "!*.{js,cjs,mjs,ts}",
     "!components.json",
     "!.prettierrc",
-    "!speakmcp-rs/*",
+    "!nvidia-cc-rs/*",
   ],
   asar: false,
   win: {
     icon: "build/icon.ico",
-    executableName: "speakmcp",
+    executableName: "nvidia-control-center",
     target: [
       {
         target: "nsis",
@@ -124,8 +124,8 @@ module.exports = {
     signDlls: false,
     extraResources: [
       {
-        from: "resources/bin/speakmcp-rs.exe",
-        to: "bin/speakmcp-rs.exe",
+        from: "resources/bin/nvidia-cc-rs.exe",
+        to: "bin/nvidia-cc-rs.exe",
         filter: ["**/*"]
       },
       {
@@ -157,7 +157,7 @@ module.exports = {
   },
   mac: {
     binaries: [
-      "resources/bin/speakmcp-rs",
+      "resources/bin/nvidia-cc-rs",
     ],
     extraResources: [
       {
@@ -203,18 +203,18 @@ module.exports = {
     ],
     extendInfo: {
       NSCameraUsageDescription:
-        "SpeakMCP may request camera access for enhanced AI features.",
+        "NVIDIA Control Center may request camera access for enhanced features.",
       NSMicrophoneUsageDescription:
-        "SpeakMCP requires microphone access for voice dictation and transcription.",
+        "NVIDIA Control Center requires microphone access for voice features.",
       NSDocumentsFolderUsageDescription:
-        "SpeakMCP may access your Documents folder to save transcriptions and settings.",
+        "NVIDIA Control Center may access your Documents folder to save settings.",
       NSDownloadsFolderUsageDescription:
-        "SpeakMCP may access your Downloads folder to save exported files.",
+        "NVIDIA Control Center may access your Downloads folder to save exported files.",
       LSMinimumSystemVersion: "12.0.0",
       CFBundleURLTypes: [
         {
-          CFBundleURLName: "SpeakMCP Protocol",
-          CFBundleURLSchemes: ["speakmcp"],
+          CFBundleURLName: "NVIDIA Control Center Protocol",
+          CFBundleURLSchemes: ["nvidia-cc"],
         },
       ],
     },
@@ -240,18 +240,18 @@ module.exports = {
     cscInstallerLink: process.env.CSC_INSTALLER_LINK,
     extendInfo: {
       NSCameraUsageDescription:
-        "SpeakMCP may request camera access for enhanced AI features.",
+        "NVIDIA Control Center may request camera access for enhanced features.",
       NSMicrophoneUsageDescription:
-        "SpeakMCP requires microphone access for voice dictation and transcription.",
+        "NVIDIA Control Center requires microphone access for voice features.",
       NSDocumentsFolderUsageDescription:
-        "SpeakMCP may access your Documents folder to save transcriptions and settings.",
+        "NVIDIA Control Center may access your Documents folder to save settings.",
       NSDownloadsFolderUsageDescription:
-        "SpeakMCP may access your Downloads folder to save exported files.",
+        "NVIDIA Control Center may access your Downloads folder to save exported files.",
       LSMinimumSystemVersion: "12.0.0",
       CFBundleURLTypes: [
         {
-          CFBundleURLName: "SpeakMCP Protocol",
-          CFBundleURLSchemes: ["speakmcp"],
+          CFBundleURLName: "NVIDIA Control Center Protocol",
+          CFBundleURLSchemes: ["nvidia-cc"],
         },
       ],
     },
@@ -266,18 +266,18 @@ module.exports = {
     category: "public.app-category.productivity",
     extendInfo: {
       NSCameraUsageDescription:
-        "SpeakMCP may request camera access for enhanced AI features.",
+        "NVIDIA Control Center may request camera access for enhanced features.",
       NSMicrophoneUsageDescription:
-        "SpeakMCP requires microphone access for voice dictation and transcription.",
+        "NVIDIA Control Center requires microphone access for voice features.",
       NSDocumentsFolderUsageDescription:
-        "SpeakMCP may access your Documents folder to save transcriptions and settings.",
+        "NVIDIA Control Center may access your Documents folder to save settings.",
       NSDownloadsFolderUsageDescription:
-        "SpeakMCP may access your Downloads folder to save exported files.",
+        "NVIDIA Control Center may access your Downloads folder to save exported files.",
       LSMinimumSystemVersion: "10.15.0",
       CFBundleURLTypes: [
         {
-          CFBundleURLName: "SpeakMCP Protocol",
-          CFBundleURLSchemes: ["speakmcp"],
+          CFBundleURLName: "NVIDIA Control Center Protocol",
+          CFBundleURLSchemes: ["nvidia-cc"],
         },
       ],
     },
@@ -299,27 +299,27 @@ module.exports = {
   },
   linux: {
     target: ["AppImage", "deb"],
-    maintainer: "SpeakMCP <hi@techfren.net>",
-    vendor: "SpeakMCP",
+    maintainer: "NVIDIA Control Center",
+    vendor: "NVIDIA Control Center",
     category: "Utility",
-    synopsis: "AI-powered voice assistant with MCP integration",
-    description: "SpeakMCP is an AI-powered dictation and voice assistant tool with Model Context Protocol (MCP) integration for enhanced productivity.",
+    synopsis: "NVIDIA GPU management and monitoring",
+    description: "NVIDIA Control Center provides GPU management, monitoring, and control features for NVIDIA graphics cards.",
     desktop: {
-      Name: "SpeakMCP",
-      Comment: "AI-powered voice assistant with MCP integration",
-      GenericName: "Voice Assistant",
-      Keywords: "voice;dictation;ai;assistant;mcp;transcription;",
-      Categories: "Utility;Audio;Development;",
-      StartupWMClass: "speakmcp",
+      Name: "NVIDIA Control Center",
+      Comment: "NVIDIA GPU management and monitoring",
+      GenericName: "GPU Control Center",
+      Keywords: "nvidia;gpu;graphics;monitoring;control;",
+      Categories: "Utility;System;",
+      StartupWMClass: "nvidia-control-center",
       StartupNotify: false,
       Terminal: false,
       Type: "Application",
     },
-    executableName: "speakmcp",
+    executableName: "nvidia-control-center",
     extraResources: [
       {
-        from: "resources/bin/speakmcp-rs",
-        to: "bin/speakmcp-rs",
+        from: "resources/bin/nvidia-cc-rs",
+        to: "bin/nvidia-cc-rs",
         filter: ["**/*"]
       },
       {
@@ -394,7 +394,7 @@ module.exports = {
   publish: {
     provider: "github",
     owner: "aj47",
-    repo: "SpeakMCP",
+    repo: "nvidia-control-center",
   },
   removePackageScripts: true,
 }

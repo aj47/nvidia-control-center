@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
 
-# Post-installation script for SpeakMCP Debian package
+# Post-installation script for NVIDIA Control Center Debian package
 # This script sets up desktop integration, permissions, and PATH symlinks
 
-echo "Setting up SpeakMCP..."
+echo "Setting up NVIDIA Control Center..."
 
 # Define installation paths
-INSTALL_DIR="/opt/SpeakMCP"
-BIN_NAME="speakmcp"
-DESKTOP_FILE="/usr/share/applications/speakmcp.desktop"
+INSTALL_DIR="/opt/NVIDIAControlCenter"
+BIN_NAME="nvidia-control-center"
+DESKTOP_FILE="/usr/share/applications/nvidia-control-center.desktop"
 ICON_DIR="/usr/share/icons/hicolor"
 
 # 1. Make binary executable
@@ -80,11 +80,11 @@ if [ -n "$CURRENT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
     fi
 fi
 
-echo "SpeakMCP installation complete!"
+echo "NVIDIA Control Center installation complete!"
 echo ""
 echo "You can now:"
-echo "  • Launch SpeakMCP from your application menu"
-echo "  • Run 'speakmcp' from the terminal"
+echo "  • Launch NVIDIA Control Center from your application menu"
+echo "  • Run 'nvidia-control-center' from the terminal"
 echo ""
 
 exit 0

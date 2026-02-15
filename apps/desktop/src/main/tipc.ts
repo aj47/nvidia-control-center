@@ -476,7 +476,7 @@ import { summarizationService } from "./summarization-service"
 import { updateTrayIcon } from "./tray"
 import { isAccessibilityGranted } from "./utils"
 import { writeText, writeTextWithFocusRestore } from "./keyboard"
-import { preprocessTextForTTS, validateTTSText } from "@speakmcp/shared"
+import { preprocessTextForTTS, validateTTSText } from "@nvidia-cc/shared"
 import { preprocessTextForTTSWithLLM } from "./tts-llm-preprocessing"
 
 
@@ -1126,73 +1126,20 @@ export const router = {
       const config = configStore.get()
       let transcript: string
 
-      if (config.sttProviderId === "parakeet") {
-        // Use Parakeet (local) STT
-        if (!parakeetStt.isModelReady()) {
-          throw new Error("Parakeet model not downloaded. Please download it in Settings.")
-        }
-
-        // Initialize recognizer if needed
-        await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
-
-        // TODO: Audio format conversion needed
-        // The input is webm ArrayBuffer from MediaRecorder
-        // Parakeet expects Float32Array samples at 16kHz mono
-        // For now, this will not work correctly until audio conversion is added
-        transcript = await parakeetStt.transcribe(input.recording, 16000)
-        transcript = await postProcessTranscript(transcript)
-      } else {
-        // Use OpenAI or Groq for transcription
-        const form = new FormData()
-        form.append(
-          "file",
-          new File([input.recording], "recording.webm", { type: "audio/webm" }),
-        )
-        form.append(
-          "model",
-          config.sttProviderId === "groq" ? "whisper-large-v3-turbo" : "whisper-1",
-        )
-        form.append("response_format", "json")
-
-        // Add prompt parameter for Groq if provided
-        if (config.sttProviderId === "groq" && config.groqSttPrompt?.trim()) {
-          form.append("prompt", config.groqSttPrompt.trim())
-        }
-
-        // Add language parameter if specified
-        const languageCode = config.sttProviderId === "groq"
-          ? config.groqSttLanguage || config.sttLanguage
-          : config.openaiSttLanguage || config.sttLanguage;
-
-        if (languageCode && languageCode !== "auto") {
-          form.append("language", languageCode)
-        }
-
-        const groqBaseUrl = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-        const openaiBaseUrl = config.openaiBaseUrl || "https://api.openai.com/v1"
-
-        const transcriptResponse = await fetch(
-          config.sttProviderId === "groq"
-            ? `${groqBaseUrl}/audio/transcriptions`
-            : `${openaiBaseUrl}/audio/transcriptions`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${config.sttProviderId === "groq" ? config.groqApiKey : config.openaiApiKey}`,
-            },
-            body: form,
-          },
-        )
-
-        if (!transcriptResponse.ok) {
-          const message = `${transcriptResponse.statusText} ${(await transcriptResponse.text()).slice(0, 300)}`
-
-          throw new Error(message)
-        }
-
-        const json: { text: string } = await transcriptResponse.json()
-        transcript = await postProcessTranscript(json.text)
+      // Use Parakeet (local) STT - the only supported STT provider
+      if (!parakeetStt.isModelReady()) {
+        throw new Error("Parakeet model not downloaded. Please download it in Settings.")
       }
+
+      // Initialize recognizer if needed
+      await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
+
+      // TODO: Audio format conversion needed
+      // The input is webm ArrayBuffer from MediaRecorder
+      // Parakeet expects Float32Array samples at 16kHz mono
+      // For now, this will not work correctly until audio conversion is added
+      transcript = await parakeetStt.transcribe(input.recording, 16000)
+      transcript = await postProcessTranscript(transcript)
 
       const history = getRecordingHistory()
       const item: RecordingHistoryItem = {
@@ -1422,67 +1369,17 @@ export const router = {
             // Active session exists - transcribe audio and queue the result
             logApp(`[createMcpRecording] Active session ${activeSessionId} found for conversation ${input.conversationId}, will queue transcript`)
 
-            // Transcribe the audio first
-            if (config.sttProviderId === "parakeet") {
-              // Use Parakeet (local) STT
-              if (!parakeetStt.isModelReady()) {
-                throw new Error("Parakeet model not downloaded. Please download it in Settings.")
-              }
-
-              await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
-
-              // TODO: Audio format conversion needed
-              // The input is webm ArrayBuffer from MediaRecorder
-              // Parakeet expects Float32Array samples at 16kHz mono
-              transcript = await parakeetStt.transcribe(input.recording, 16000)
-            } else {
-              const form = new FormData()
-              form.append(
-                "file",
-                new File([input.recording], "recording.webm", { type: "audio/webm" }),
-              )
-              form.append(
-                "model",
-                config.sttProviderId === "groq" ? "whisper-large-v3-turbo" : "whisper-1",
-              )
-              form.append("response_format", "json")
-
-              if (config.sttProviderId === "groq" && config.groqSttPrompt?.trim()) {
-                form.append("prompt", config.groqSttPrompt.trim())
-              }
-
-              const languageCode = config.sttProviderId === "groq"
-                ? config.groqSttLanguage || config.sttLanguage
-                : config.openaiSttLanguage || config.sttLanguage
-
-              if (languageCode && languageCode !== "auto") {
-                form.append("language", languageCode)
-              }
-
-              const groqBaseUrl = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-              const openaiBaseUrl = config.openaiBaseUrl || "https://api.openai.com/v1"
-
-              const transcriptResponse = await fetch(
-                config.sttProviderId === "groq"
-                  ? `${groqBaseUrl}/audio/transcriptions`
-                  : `${openaiBaseUrl}/audio/transcriptions`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${config.sttProviderId === "groq" ? config.groqApiKey : config.openaiApiKey}`,
-                  },
-                  body: form,
-                },
-              )
-
-              if (!transcriptResponse.ok) {
-                const message = `${transcriptResponse.statusText} ${(await transcriptResponse.text()).slice(0, 300)}`
-                throw new Error(message)
-              }
-
-              const json: { text: string } = await transcriptResponse.json()
-              transcript = json.text
+            // Transcribe the audio using Parakeet (local) STT - the only supported provider
+            if (!parakeetStt.isModelReady()) {
+              throw new Error("Parakeet model not downloaded. Please download it in Settings.")
             }
+
+            await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
+
+            // TODO: Audio format conversion needed
+            // The input is webm ArrayBuffer from MediaRecorder
+            // Parakeet expects Float32Array samples at 16kHz mono
+            transcript = await parakeetStt.transcribe(input.recording, 16000)
 
             // Save the recording file
             const recordingId = Date.now().toString()
@@ -1607,69 +1504,17 @@ export const router = {
           conversationHistory: [],
         })
 
-        // First, transcribe the audio using the same logic as regular recording
-        if (config.sttProviderId === "parakeet") {
-          // Use Parakeet (local) STT
-          if (!parakeetStt.isModelReady()) {
-            throw new Error("Parakeet model not downloaded. Please download it in Settings.")
-          }
-
-          await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
-
-          // TODO: Audio format conversion needed
-          // The input is webm ArrayBuffer from MediaRecorder
-          // Parakeet expects Float32Array samples at 16kHz mono
-          transcript = await parakeetStt.transcribe(input.recording, 16000)
-        } else {
-          // Use OpenAI or Groq for transcription
-          const form = new FormData()
-          form.append(
-            "file",
-            new File([input.recording], "recording.webm", { type: "audio/webm" }),
-          )
-          form.append(
-            "model",
-            config.sttProviderId === "groq" ? "whisper-large-v3-turbo" : "whisper-1",
-          )
-          form.append("response_format", "json")
-
-          if (config.sttProviderId === "groq" && config.groqSttPrompt?.trim()) {
-            form.append("prompt", config.groqSttPrompt.trim())
-          }
-
-          // Add language parameter if specified
-          const languageCode = config.sttProviderId === "groq"
-            ? config.groqSttLanguage || config.sttLanguage
-            : config.openaiSttLanguage || config.sttLanguage;
-
-          if (languageCode && languageCode !== "auto") {
-            form.append("language", languageCode)
-          }
-
-          const groqBaseUrl = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-          const openaiBaseUrl = config.openaiBaseUrl || "https://api.openai.com/v1"
-
-          const transcriptResponse = await fetch(
-            config.sttProviderId === "groq"
-              ? `${groqBaseUrl}/audio/transcriptions`
-              : `${openaiBaseUrl}/audio/transcriptions`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${config.sttProviderId === "groq" ? config.groqApiKey : config.openaiApiKey}`,
-              },
-              body: form,
-            },
-          )
-
-          if (!transcriptResponse.ok) {
-            const message = `${transcriptResponse.statusText} ${(await transcriptResponse.text()).slice(0, 300)}`
-            throw new Error(message)
-          }
-
-          const json: { text: string } = await transcriptResponse.json()
-          transcript = json.text
+        // Transcribe the audio using Parakeet (local) STT - the only supported provider
+        if (!parakeetStt.isModelReady()) {
+          throw new Error("Parakeet model not downloaded. Please download it in Settings.")
         }
+
+        await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
+
+        // TODO: Audio format conversion needed
+        // The input is webm ArrayBuffer from MediaRecorder
+        // Parakeet expects Float32Array samples at 16kHz mono
+        transcript = await parakeetStt.transcribe(input.recording, 16000)
 
       // Create or continue conversation
       let conversationId = input.conversationId
@@ -1822,12 +1667,8 @@ export const router = {
       // Clear models cache if provider endpoints or API keys changed
       try {
         const providerConfigChanged =
-          (prev as any)?.openaiBaseUrl !== (merged as any)?.openaiBaseUrl ||
-          (prev as any)?.openaiApiKey !== (merged as any)?.openaiApiKey ||
-          (prev as any)?.groqBaseUrl !== (merged as any)?.groqBaseUrl ||
-          (prev as any)?.groqApiKey !== (merged as any)?.groqApiKey ||
-          (prev as any)?.geminiBaseUrl !== (merged as any)?.geminiBaseUrl ||
-          (prev as any)?.geminiApiKey !== (merged as any)?.geminiApiKey
+          (prev as any)?.nemotronBaseUrl !== (merged as any)?.nemotronBaseUrl ||
+          (prev as any)?.nemotronApiKey !== (merged as any)?.nemotronApiKey
 
         if (providerConfigChanged) {
           const { clearModelsCache } = await import("./models-service")
@@ -2504,83 +2345,9 @@ export const router = {
       model?: string
       speed?: number
     }>()
-    .action(async ({ input }) => {
-
-
-
-
-
-
-
-
-
-      const config = configStore.get()
-
-
-
-      if (!config.ttsEnabled) {
-        throw new Error("Text-to-Speech is not enabled")
-      }
-
-      const providerId = input.providerId || config.ttsProviderId || "openai"
-
-      // Preprocess text for TTS
-      let processedText = input.text
-
-      if (config.ttsPreprocessingEnabled !== false) {
-        // Use LLM-based preprocessing if enabled, otherwise fall back to regex
-        if (config.ttsUseLLMPreprocessing) {
-          processedText = await preprocessTextForTTSWithLLM(input.text, config.ttsLLMPreprocessingProviderId)
-        } else {
-          // Use regex-based preprocessing
-          const preprocessingOptions = {
-            removeCodeBlocks: config.ttsRemoveCodeBlocks ?? true,
-            removeUrls: config.ttsRemoveUrls ?? true,
-            convertMarkdown: config.ttsConvertMarkdown ?? true,
-          }
-          processedText = preprocessTextForTTS(input.text, preprocessingOptions)
-        }
-      }
-
-      // Validate processed text
-      const validation = validateTTSText(processedText)
-      if (!validation.isValid) {
-        throw new Error(`TTS validation failed: ${validation.issues.join(", ")}`)
-      }
-
-      try {
-        let audioBuffer: ArrayBuffer
-
-
-
-        if (providerId === "openai") {
-          audioBuffer = await generateOpenAITTS(processedText, input, config)
-        } else if (providerId === "groq") {
-          audioBuffer = await generateGroqTTS(processedText, input, config)
-        } else if (providerId === "gemini") {
-          audioBuffer = await generateGeminiTTS(processedText, input, config)
-        } else if (providerId === "kitten") {
-          const { synthesize } = await import('./kitten-tts')
-          const voiceId = config.kittenVoiceId ?? 0 // Default to Voice 2 - Male
-          const result = await synthesize(processedText, voiceId, input.speed)
-          const wavBuffer = float32ToWav(result.samples, result.sampleRate)
-          // Convert Buffer to ArrayBuffer
-          audioBuffer = new Uint8Array(wavBuffer).buffer
-        } else {
-          throw new Error(`Unsupported TTS provider: ${providerId}`)
-        }
-
-
-
-        return {
-          audio: audioBuffer,
-          processedText,
-          provider: providerId,
-        }
-      } catch (error) {
-        diagnosticsService.logError("tts", "TTS generation failed", error)
-        throw error
-      }
+    .action(async ({ input: _input }) => {
+      // TTS is disabled - no providers available after refactor
+      throw new Error("Text-to-Speech is not available. No TTS providers are configured.")
     }),
 
   // Models Management
@@ -2847,38 +2614,18 @@ export const router = {
         ...(profile.modelConfig?.mcpToolsProviderId && {
           mcpToolsProviderId: profile.modelConfig.mcpToolsProviderId,
         }),
-        ...(profile.modelConfig?.mcpToolsOpenaiModel && {
-          mcpToolsOpenaiModel: profile.modelConfig.mcpToolsOpenaiModel,
-        }),
-        ...(profile.modelConfig?.mcpToolsGroqModel && {
-          mcpToolsGroqModel: profile.modelConfig.mcpToolsGroqModel,
-        }),
-        ...(profile.modelConfig?.mcpToolsGeminiModel && {
-          mcpToolsGeminiModel: profile.modelConfig.mcpToolsGeminiModel,
+        ...(profile.modelConfig?.mcpToolsNemotronModel && {
+          mcpToolsNemotronModel: profile.modelConfig.mcpToolsNemotronModel,
         }),
         ...(profile.modelConfig?.currentModelPresetId && {
           currentModelPresetId: profile.modelConfig.currentModelPresetId,
-        }),
-        // STT Provider settings
-        ...(profile.modelConfig?.sttProviderId && {
-          sttProviderId: profile.modelConfig.sttProviderId,
         }),
         // Transcript Post-Processing settings
         ...(profile.modelConfig?.transcriptPostProcessingProviderId && {
           transcriptPostProcessingProviderId: profile.modelConfig.transcriptPostProcessingProviderId,
         }),
-        ...(profile.modelConfig?.transcriptPostProcessingOpenaiModel && {
-          transcriptPostProcessingOpenaiModel: profile.modelConfig.transcriptPostProcessingOpenaiModel,
-        }),
-        ...(profile.modelConfig?.transcriptPostProcessingGroqModel && {
-          transcriptPostProcessingGroqModel: profile.modelConfig.transcriptPostProcessingGroqModel,
-        }),
-        ...(profile.modelConfig?.transcriptPostProcessingGeminiModel && {
-          transcriptPostProcessingGeminiModel: profile.modelConfig.transcriptPostProcessingGeminiModel,
-        }),
-        // TTS Provider settings
-        ...(profile.modelConfig?.ttsProviderId && {
-          ttsProviderId: profile.modelConfig.ttsProviderId,
+        ...(profile.modelConfig?.transcriptPostProcessingNemotronModel && {
+          transcriptPostProcessingNemotronModel: profile.modelConfig.transcriptPostProcessingNemotronModel,
         }),
       }
       configStore.save(updatedConfig)
@@ -2940,19 +2687,11 @@ export const router = {
       return profileService.saveCurrentModelStateToProfile(input.profileId, {
         // Agent/MCP Tools settings
         mcpToolsProviderId: config.mcpToolsProviderId,
-        mcpToolsOpenaiModel: config.mcpToolsOpenaiModel,
-        mcpToolsGroqModel: config.mcpToolsGroqModel,
-        mcpToolsGeminiModel: config.mcpToolsGeminiModel,
+        mcpToolsNemotronModel: config.mcpToolsNemotronModel,
         currentModelPresetId: config.currentModelPresetId,
-        // STT Provider settings
-        sttProviderId: config.sttProviderId,
         // Transcript Post-Processing settings
         transcriptPostProcessingProviderId: config.transcriptPostProcessingProviderId,
-        transcriptPostProcessingOpenaiModel: config.transcriptPostProcessingOpenaiModel,
-        transcriptPostProcessingGroqModel: config.transcriptPostProcessingGroqModel,
-        transcriptPostProcessingGeminiModel: config.transcriptPostProcessingGeminiModel,
-        // TTS Provider settings
-        ttsProviderId: config.ttsProviderId,
+        transcriptPostProcessingNemotronModel: config.transcriptPostProcessingNemotronModel,
       })
     }),
 
@@ -2961,38 +2700,22 @@ export const router = {
     .input<{
       profileId: string
       // Agent/MCP Tools settings
-      mcpToolsProviderId?: "openai" | "groq" | "gemini"
-      mcpToolsOpenaiModel?: string
-      mcpToolsGroqModel?: string
-      mcpToolsGeminiModel?: string
+      mcpToolsProviderId?: "nemotron"
+      mcpToolsNemotronModel?: string
       currentModelPresetId?: string
-      // STT Provider settings
-      sttProviderId?: "openai" | "groq" | "parakeet"
       // Transcript Post-Processing settings
-      transcriptPostProcessingProviderId?: "openai" | "groq" | "gemini"
-      transcriptPostProcessingOpenaiModel?: string
-      transcriptPostProcessingGroqModel?: string
-      transcriptPostProcessingGeminiModel?: string
-      // TTS Provider settings
-      ttsProviderId?: "openai" | "groq" | "gemini" | "kitten"
+      transcriptPostProcessingProviderId?: "nemotron"
+      transcriptPostProcessingNemotronModel?: string
     }>()
     .action(async ({ input }) => {
         return profileService.updateProfileModelConfig(input.profileId, {
         // Agent/MCP Tools settings
         mcpToolsProviderId: input.mcpToolsProviderId,
-        mcpToolsOpenaiModel: input.mcpToolsOpenaiModel,
-        mcpToolsGroqModel: input.mcpToolsGroqModel,
-        mcpToolsGeminiModel: input.mcpToolsGeminiModel,
+        mcpToolsNemotronModel: input.mcpToolsNemotronModel,
         currentModelPresetId: input.currentModelPresetId,
-        // STT Provider settings
-        sttProviderId: input.sttProviderId,
         // Transcript Post-Processing settings
         transcriptPostProcessingProviderId: input.transcriptPostProcessingProviderId,
-        transcriptPostProcessingOpenaiModel: input.transcriptPostProcessingOpenaiModel,
-        transcriptPostProcessingGroqModel: input.transcriptPostProcessingGroqModel,
-        transcriptPostProcessingGeminiModel: input.transcriptPostProcessingGeminiModel,
-        // TTS Provider settings
-        ttsProviderId: input.ttsProviderId,
+        transcriptPostProcessingNemotronModel: input.transcriptPostProcessingNemotronModel,
       })
     }),
 
@@ -3311,7 +3034,7 @@ export const router = {
         // We include displayName to satisfy the ACPAgentConfig contract and avoid undefined issues
         agents.push({
           name: input.agentName,
-          displayName: input.agentName === 'internal' ? 'SpeakMCP Internal' : input.agentName,
+          displayName: input.agentName === 'internal' ? 'NVIDIA Control Center Internal' : input.agentName,
           enabled: input.enabled,
           isInternal: input.agentName === 'internal',
           connection: { type: 'internal' as const }
@@ -3860,189 +3583,6 @@ export const router = {
     .action(async ({ input }) => {
       return summarizationService.getImportantSummaries(input.sessionId)
     }),
-}
-
-// TTS Provider Implementation Functions
-
-async function generateOpenAITTS(
-  text: string,
-  input: { voice?: string; model?: string; speed?: number },
-  config: Config
-): Promise<ArrayBuffer> {
-  const model = input.model || config.openaiTtsModel || "tts-1"
-  const voice = input.voice || config.openaiTtsVoice || "alloy"
-  const speed = input.speed || config.openaiTtsSpeed || 1.0
-  const responseFormat = config.openaiTtsResponseFormat || "mp3"
-
-  const baseUrl = config.openaiBaseUrl || "https://api.openai.com/v1"
-  const apiKey = config.openaiApiKey
-
-
-
-  if (!apiKey) {
-    throw new Error("OpenAI API key is required for TTS")
-  }
-
-  const requestBody = {
-    model,
-    input: text,
-    voice,
-    speed,
-    response_format: responseFormat,
-  }
-
-
-
-  const response = await fetch(`${baseUrl}/audio/speech`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  })
-
-
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`OpenAI TTS API error: ${response.statusText} - ${errorText}`)
-  }
-
-  const audioBuffer = await response.arrayBuffer()
-
-  return audioBuffer
-}
-
-async function generateGroqTTS(
-  text: string,
-  input: { voice?: string; model?: string },
-  config: Config
-): Promise<ArrayBuffer> {
-  const model = input.model || config.groqTtsModel || "canopylabs/orpheus-v1-english"
-  // Choose default voice based on model - Arabic model should use Arabic voice
-  const defaultVoice = model === "canopylabs/orpheus-arabic-saudi" ? "fahad" : "troy"
-  const voice = input.voice || config.groqTtsVoice || defaultVoice
-
-  const baseUrl = config.groqBaseUrl || "https://api.groq.com/openai/v1"
-  const apiKey = config.groqApiKey
-
-
-
-  if (!apiKey) {
-    throw new Error("Groq API key is required for TTS")
-  }
-
-  const requestBody = {
-    model,
-    input: text,
-    voice,
-    response_format: "wav",
-  }
-
-
-
-  const response = await fetch(`${baseUrl}/audio/speech`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  })
-
-
-
-  if (!response.ok) {
-    const errorText = await response.text()
-
-    // Check for specific error cases and provide helpful messages
-    if (errorText.includes("requires terms acceptance")) {
-      // The model parameter determines which terms page to show
-      const modelParam = model === "canopylabs/orpheus-arabic-saudi"
-        ? "canopylabs%2Forpheus-arabic-saudi"
-        : "canopylabs%2Forpheus-v1-english"
-      throw new Error(`Groq TTS model requires terms acceptance. Please visit https://console.groq.com/playground?model=${modelParam} and accept the terms when prompted, then try again.`)
-    }
-
-    throw new Error(`Groq TTS API error: ${response.statusText} - ${errorText}`)
-  }
-
-  const audioBuffer = await response.arrayBuffer()
-
-  return audioBuffer
-}
-
-async function generateGeminiTTS(
-  text: string,
-  input: { voice?: string; model?: string },
-  config: Config
-): Promise<ArrayBuffer> {
-  const model = input.model || config.geminiTtsModel || "gemini-2.5-flash-preview-tts"
-  const voice = input.voice || config.geminiTtsVoice || "Kore"
-
-  const baseUrl = config.geminiBaseUrl || "https://generativelanguage.googleapis.com"
-  const apiKey = config.geminiApiKey
-
-  if (!apiKey) {
-    throw new Error("Gemini API key is required for TTS")
-  }
-
-  const requestBody = {
-    contents: [{
-      parts: [{ text }]
-    }],
-    generationConfig: {
-      responseModalities: ["AUDIO"],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: {
-            voiceName: voice
-          }
-        }
-      }
-    }
-  }
-
-  const url = `${baseUrl}/v1beta/models/${model}:generateContent?key=${apiKey}`
-
-
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  })
-
-
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Gemini TTS API error: ${response.statusText} - ${errorText}`)
-  }
-
-  const result = await response.json()
-
-
-
-  const audioData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data
-
-  if (!audioData) {
-    throw new Error("No audio data received from Gemini TTS API")
-  }
-
-  // Convert base64 to ArrayBuffer
-  const binaryString = atob(audioData)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-
-
-
-  return bytes.buffer
 }
 
 export type Router = typeof router

@@ -5,7 +5,7 @@
  * Some versions of electron-builder require these directories to exist
  * before the build starts.
  * 
- * Issue: https://github.com/aj47/SpeakMCP/issues/595
+ * Issue: https://github.com/aj47/nvidia-control-center/issues/595
  */
 
 import { existsSync, mkdirSync } from "fs"
@@ -21,7 +21,7 @@ const desktopDir = join(__dirname, "..")
 const requiredDirs = [
   "dist",
   "dist-installer",
-  "dist-installer@speakmcp",
+  "dist-installer@nvidia-cc",
   "resources/bin",
 ]
 

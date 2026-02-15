@@ -1,16 +1,16 @@
-# Privacy Policy for SpeakMCP
+# Privacy Policy for NVIDIA Control Center
 
 ## 📋 Privacy Policy Overview
 
-**Effective Date**: August 14, 2025  
+**Effective Date**: August 14, 2025
 **Last Updated**: August 14, 2025
 
-SpeakMCP is designed with privacy as a fundamental principle. This privacy policy explains how we collect, use, and protect your information.
+NVIDIA Control Center is designed with privacy as a fundamental principle. This privacy policy explains how we collect, use, and protect your information.
 
 ## 🚫 **No Data Collection**
 
 ### Core Principle
-SpeakMCP operates on a **zero-data-collection** principle. We do not collect, store, or transmit any personal information to external servers.
+NVIDIA Control Center operates on a **zero-data-collection** principle. We do not collect, store, or transmit any personal information to external servers.
 
 ### What We Don't Collect
 - **No Personal Information**: Names, emails, or identifying information
@@ -36,9 +36,9 @@ All data is stored **exclusively** on your local machine:
 ## 🏗️ **Technical Details**
 
 ### Data Locations
-- **macOS**: `~/Library/Application Support/SpeakMCP/`
-- **Windows**: `%APPDATA%/SpeakMCP/`
-- **Linux**: `~/.config/SpeakMCP/`
+- **macOS**: `~/Library/Application Support/NVIDIA Control Center/`
+- **Windows**: `%APPDATA%/NVIDIA Control Center/`
+- **Linux**: `~/.config/NVIDIA Control Center/`
 
 ### Encryption
 - **API Keys**: Encrypted using system keychain/keyring
@@ -48,7 +48,7 @@ All data is stored **exclusively** on your local machine:
 ## 🔍 **Third-Party Services**
 
 ### API Providers
-When you use SpeakMCP with external services (OpenAI, Groq, Gemini, etc.):
+When you use NVIDIA Control Center with external services (OpenAI, Groq, Gemini, etc.):
 - **Direct Connection**: Your API calls go directly to the service provider
 - **No Proxy**: We do not proxy or intercept your communications
 - **Provider Policies**: Subject to the privacy policies of the respective providers
@@ -87,7 +87,7 @@ When you use SpeakMCP with external services (OpenAI, Groq, Gemini, etc.):
 ## 📞 **Contact Information**
 
 ### Privacy Questions
-- **Email**: privacy@speakmcp.com
+- **Email**: privacy@nvidia-control-center.com
 - **GitHub**: Create an issue on our GitHub repository
 - **Response Time**: Within 48 hours
 

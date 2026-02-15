@@ -1,7 +1,7 @@
-import type { CHAT_PROVIDER_ID, STT_PROVIDER_ID, TTS_PROVIDER_ID, OPENAI_COMPATIBLE_PRESET_ID } from "."
-import type { ToolCall, ToolResult } from '@speakmcp/shared'
+import type { CHAT_PROVIDER_ID, STT_PROVIDER_ID } from "."
+import type { ToolCall, ToolResult } from '@nvidia-cc/shared'
 
-export type { ToolCall, ToolResult, BaseChatMessage, ConversationHistoryMessage, ChatApiResponse } from '@speakmcp/shared'
+export type { ToolCall, ToolResult, BaseChatMessage, ConversationHistoryMessage, ChatApiResponse } from '@nvidia-cc/shared'
 
 export type RecordingHistoryItem = {
   id: string
@@ -409,21 +409,15 @@ export type ProfileMcpServerConfig = {
 }
 
 export type ProfileModelConfig = {
-  // Agent/MCP Tools settings
-  mcpToolsProviderId?: "openai" | "groq" | "gemini"
-  mcpToolsOpenaiModel?: string
-  mcpToolsGroqModel?: string
-  mcpToolsGeminiModel?: string
+  // Agent/MCP Tools settings - Only Nemotron is supported
+  mcpToolsProviderId?: "nemotron"
+  mcpToolsNemotronModel?: string
   currentModelPresetId?: string
-  // STT Provider settings
-  sttProviderId?: "openai" | "groq" | "parakeet"
-  // Transcript Post-Processing settings
-  transcriptPostProcessingProviderId?: "openai" | "groq" | "gemini"
-  transcriptPostProcessingOpenaiModel?: string
-  transcriptPostProcessingGroqModel?: string
-  transcriptPostProcessingGeminiModel?: string
-  // TTS Provider settings
-  ttsProviderId?: "openai" | "groq" | "gemini" | "kitten"
+  // STT Provider settings - Only Parakeet is supported
+  sttProviderId?: "parakeet"
+  // Transcript Post-Processing settings - Only Nemotron is supported
+  transcriptPostProcessingProviderId?: "nemotron"
+  transcriptPostProcessingNemotronModel?: string
 }
 
 // Per-profile skills configuration
@@ -499,8 +493,8 @@ export type PersonaMcpServerConfig = {
  * Kept for backward compatibility with existing persona data.
  */
 export type PersonaModelConfig = {
-  /** LLM provider for this persona */
-  providerId: "openai" | "groq" | "gemini"
+  /** LLM provider for this persona - Only Nemotron is supported */
+  providerId: "nemotron"
   /** Model name/identifier */
   model: string
   /** Optional temperature override (0-2) */
@@ -523,13 +517,13 @@ export type PersonaSkillsConfig = {
  * Defines how to connect to the persona's underlying agent.
  *
  * Two main modes:
- * 1. Built-in agent (type: "internal") - Uses SpeakMCP's internal agent with persona's model config
+ * 1. Built-in agent (type: "internal") - Uses NVIDIA Control Center's internal agent with persona's model config
  * 2. External ACP agent (type: "acp-agent") - Delegates to a configured ACP agent by name
  */
 export type PersonaConnectionConfig = {
   /**
    * Connection type:
-   * - "internal": Uses built-in SpeakMCP agent (model config from persona)
+   * - "internal": Uses built-in NVIDIA Control Center agent (model config from persona)
    * - "acp-agent": Uses an external ACP agent (model config from agent settings)
    * - "stdio": Direct stdio process (legacy, for advanced use)
    * - "remote": Remote HTTP endpoint (legacy, for advanced use)
@@ -625,7 +619,7 @@ export type PersonasData = {
 
 /**
  * Connection type for an agent profile.
- * - "internal": Uses built-in SpeakMCP agent (model config from profile)
+ * - "internal": Uses built-in NVIDIA Control Center agent (model config from profile)
  * - "acp": External ACP-compatible agent (stdio spawn)
  * - "stdio": Direct stdio process spawn
  * - "remote": Remote HTTP endpoint
@@ -1140,71 +1134,26 @@ export type Config = {
   // Theme Configuration
   themePreference?: "system" | "light" | "dark" | "frost"
 
+  // STT Provider - Only Parakeet is supported
   sttProviderId?: STT_PROVIDER_ID
 
-  openaiApiKey?: string
-  openaiBaseUrl?: string
-  openaiCompatiblePreset?: OPENAI_COMPATIBLE_PRESET_ID
+  // NVIDIA Nemotron Configuration
+  nemotronApiKey?: string
+  nemotronBaseUrl?: string
 
   modelPresets?: ModelPreset[]
   currentModelPresetId?: string
-
-  groqApiKey?: string
-  groqBaseUrl?: string
-  groqSttPrompt?: string
-
-  geminiApiKey?: string
-  geminiBaseUrl?: string
-
-  // Speech-to-Text Language Configuration
-  sttLanguage?: string
-  openaiSttLanguage?: string
-  groqSttLanguage?: string
 
   // Parakeet (Local) STT Configuration
   parakeetModelPath?: string // Optional custom model path
   parakeetNumThreads?: number // Number of threads (default: 2)
   parakeetModelDownloaded?: boolean // Whether model has been downloaded
 
-  // Text-to-Speech Configuration
-  ttsEnabled?: boolean
-  ttsAutoPlay?: boolean
-  ttsProviderId?: TTS_PROVIDER_ID
-
-  // OpenAI TTS Configuration
-  openaiTtsModel?: "tts-1" | "tts-1-hd"
-  openaiTtsVoice?: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer"
-  openaiTtsSpeed?: number // 0.25 to 4.0
-  openaiTtsResponseFormat?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm"
-
-  // Groq TTS Configuration
-  groqTtsModel?: "canopylabs/orpheus-v1-english" | "canopylabs/orpheus-arabic-saudi"
-  groqTtsVoice?: string
-
-  // Gemini TTS Configuration
-  geminiTtsModel?: "gemini-2.5-flash-preview-tts" | "gemini-2.5-pro-preview-tts"
-  geminiTtsVoice?: string
-  geminiTtsLanguage?: string
-
-  // Kitten (Local) TTS Configuration
-  kittenModelDownloaded?: boolean // Whether model has been downloaded
-  kittenVoiceId?: number // Voice ID 0-7 (default: 0 for Voice 2 - Male)
-
-  // TTS Text Preprocessing Configuration
-  ttsPreprocessingEnabled?: boolean
-  ttsRemoveCodeBlocks?: boolean
-  ttsRemoveUrls?: boolean
-  ttsConvertMarkdown?: boolean
-  // LLM-based TTS Preprocessing (for more natural speech output)
-  ttsUseLLMPreprocessing?: boolean
-  ttsLLMPreprocessingProviderId?: CHAT_PROVIDER_ID
-
+  // Transcript Post-Processing - Only Nemotron is supported
   transcriptPostProcessingEnabled?: boolean
   transcriptPostProcessingProviderId?: CHAT_PROVIDER_ID
   transcriptPostProcessingPrompt?: string
-  transcriptPostProcessingOpenaiModel?: string
-  transcriptPostProcessingGroqModel?: string
-  transcriptPostProcessingGeminiModel?: string
+  transcriptPostProcessingNemotronModel?: string
 
   // Text Input Configuration
   textInputEnabled?: boolean
@@ -1232,9 +1181,7 @@ export type Config = {
   customMcpToolsShortcut?: string
   customMcpToolsShortcutMode?: "hold" | "toggle" // Mode for custom MCP tools shortcut
   mcpToolsProviderId?: CHAT_PROVIDER_ID
-  mcpToolsOpenaiModel?: string
-  mcpToolsGroqModel?: string
-  mcpToolsGeminiModel?: string
+  mcpToolsNemotronModel?: string
   mcpToolsSystemPrompt?: string
   mcpCustomSystemPrompt?: string
   mcpCurrentProfileId?: string
@@ -1262,11 +1209,8 @@ export type Config = {
   autoSaveConversations?: boolean
 
   // Provider Section Collapse Configuration
-  providerSectionCollapsedOpenai?: boolean
-  providerSectionCollapsedGroq?: boolean
-  providerSectionCollapsedGemini?: boolean
+  providerSectionCollapsedNemotron?: boolean
   providerSectionCollapsedParakeet?: boolean
-  providerSectionCollapsedKitten?: boolean
 
   // Panel Position Configuration
   panelPosition?:
@@ -1288,7 +1232,7 @@ export type Config = {
   floatingPanelAutoShow?: boolean
 
   // Hide Floating Panel When Main App is Focused
-  // When true (default), the floating panel will automatically hide when the main SpeakMCP window is focused
+  // When true (default), the floating panel will automatically hide when the main NVIDIA Control Center window is focused
   // The panel will reappear when the main window loses focus (if auto-show conditions are met)
   hidePanelWhenMainFocused?: boolean
 
@@ -1370,7 +1314,7 @@ export type Config = {
   // Name of the ACP agent to use when mainAgentMode is "acp"
   mainAgentName?: string
 
-  // ACP Tool Injection: When true (default), SpeakMCP's builtin tools are injected
+  // ACP Tool Injection: When true (default), NVIDIA Control Center's builtin tools are injected
   // into ACP agent sessions so they can use delegation, settings management, etc.
   // Set to false for "pure" ACP mode where the agent only uses its own tools.
   acpInjectBuiltinTools?: boolean
