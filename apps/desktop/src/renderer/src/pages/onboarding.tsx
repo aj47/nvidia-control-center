@@ -80,7 +80,7 @@ export function Component() {
       console.error("Transcription failed:", error)
       const errorMessage = error?.message || String(error)
       if (errorMessage.includes("API key") || errorMessage.includes("401") || errorMessage.includes("403")) {
-        setTranscriptionError("API key is missing or invalid. Please go back and enter a valid Groq API key.")
+        setTranscriptionError("Transcription failed. Voice transcription uses Parakeet locally - please check your microphone settings.")
       } else if (errorMessage.includes("model")) {
         setTranscriptionError("Model configuration error. Please check your settings.")
       } else {
@@ -252,30 +252,30 @@ function ApiKeyStep({
   return (
     <div>
       <StepIndicator current={1} total={3} />
-      <h2 className="text-2xl font-bold mb-2 text-center">Set Up Your API Key</h2>
+      <h2 className="text-2xl font-bold mb-2 text-center">Set Up Your NVIDIA API Key</h2>
       <p className="text-muted-foreground mb-6 text-center">
-        Enter your Groq API key to enable voice transcription and AI features.
-        You can also configure other providers later in Settings.
+        Enter your NVIDIA API key to enable AI features powered by Nemotron.
+        Voice transcription uses Parakeet locally (no API key needed).
       </p>
       <div className="space-y-4 mb-8">
         <div>
-          <label className="block text-sm font-medium mb-2">Groq API Key</label>
+          <label className="block text-sm font-medium mb-2">NVIDIA API Key</label>
           <Input
             type="password"
-            placeholder="gsk_..."
+            placeholder="nvapi-..."
             value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
             className="w-full"
           />
           <p className="text-xs text-muted-foreground mt-2">
-            Get your <span className="font-medium text-green-600 dark:text-green-400">free</span> API key from{" "}
+            Get your API key from{" "}
             <a
-              href="https://console.groq.com/keys"
+              href="https://build.nvidia.com/settings/api-keys"
               target="_blank"
               rel="noreferrer"
               className="text-primary underline"
             >
-              console.groq.com/keys
+              build.nvidia.com
             </a>
           </p>
         </div>
