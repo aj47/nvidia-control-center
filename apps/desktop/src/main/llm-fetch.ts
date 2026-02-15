@@ -253,6 +253,11 @@ function isRetryableError(error: unknown): boolean {
       return false
     }
 
+    // Tool-calling-unsupported errors should never be retried
+    if ((error as any).isToolCallingUnsupported) {
+      return false
+    }
+
     // Empty response errors are retryable but WITHOUT backoff
     // They are handled specially in withRetry - return true here so they're not rejected outright
     if (isEmptyResponseError(error)) {
@@ -617,6 +622,38 @@ export async function makeLLMCallWithFetch(
             toolChoice: convertedTools?.tools ? "auto" : undefined,
           })
         } catch (error) {
+          // Detect model-doesn't-support-tool-calling errors
+          // NVIDIA API returns 404 with "Function ... Not found" when the model doesn't support tools
+          if (error instanceof Error && convertedTools?.tools) {
+            const errorWithStatus = error as { statusCode?: number; status?: number; responseBody?: string }
+            const statusCode = errorWithStatus.statusCode ?? errorWithStatus.status
+            const errorMsg = error.message.toLowerCase()
+            const isToolCallingUnsupported =
+              (statusCode === 404 && (errorMsg.includes("function") || errorMsg.includes("not found"))) ||
+              (errorMsg.includes("function") && errorMsg.includes("not found")) ||
+              (errorMsg.includes("does not support") && (errorMsg.includes("tool") || errorMsg.includes("function")))
+
+            if (isToolCallingUnsupported) {
+              const modelDisplayName = modelName
+              const toolCallError = new Error(
+                `Model "${modelDisplayName}" does not support tool/function calling. ` +
+                `Please switch to a model that supports tool calling (e.g., nvidia/llama-3.1-nemotron-70b-instruct) ` +
+                `in Settings → Providers → Model Selection.`
+              )
+              // Tag the error so the agent loop can detect it
+              ;(toolCallError as any).isToolCallingUnsupported = true
+              ;(toolCallError as any).modelName = modelDisplayName
+
+              if (generationId) {
+                endLLMGeneration(generationId, {
+                  level: "ERROR",
+                  statusMessage: toolCallError.message,
+                })
+              }
+              throw toolCallError
+            }
+          }
+
           // End Langfuse generation with error before rethrowing
           if (generationId) {
             endLLMGeneration(generationId, {

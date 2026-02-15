@@ -1529,6 +1529,26 @@ Return ONLY JSON per schema.`,
         continue
       }
 
+      // Handle model-doesn't-support-tool-calling errors gracefully
+      if ((error as any)?.isToolCallingUnsupported) {
+        const modelName = (error as any)?.modelName || "current model"
+        logLLM(`❌ Model "${modelName}" does not support tool calling`)
+        thinkingStep.status = "error"
+        thinkingStep.title = "Model incompatible"
+        thinkingStep.description = `Model "${modelName}" does not support tool calling`
+        const errorContent = error?.message || `The selected model "${modelName}" does not support tool/function calling. Please switch to a compatible model (e.g., nvidia/llama-3.1-nemotron-70b-instruct) in Settings → Providers → Model Selection.`
+        conversationHistory.push({ role: "assistant", content: errorContent, timestamp: Date.now() })
+        emit({
+          currentIteration: iteration,
+          maxIterations,
+          steps: progressSteps.slice(-3),
+          isComplete: true,
+          finalContent: errorContent,
+          conversationHistory: formatConversationForProgress(conversationHistory),
+        })
+        break
+      }
+
       // Other errors - throw (llm-fetch.ts handles JSON validation/failedGeneration recovery)
       throw error
     }
