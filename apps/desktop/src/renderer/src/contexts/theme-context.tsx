@@ -45,7 +45,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         return stored as ThemeMode
       }
     } catch (e) {}
-    return "frost"
+    return "system"
   })
 
   const [theme, setTheme] = useState<"light" | "dark" | "frost">(() => {

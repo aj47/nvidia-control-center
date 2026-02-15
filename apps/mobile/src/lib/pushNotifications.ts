@@ -18,9 +18,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const PUSH_TOKEN_KEY = 'push_token_v2';
 const SERVER_REGISTERED_KEY = 'push_server_registered_v2';
 
-// Configure how notifications are handled when the app is in foreground
-// (Not supported on web - expo-notifications is a native-only module)
-if (Platform.OS !== 'web') {
+// expo-notifications is stubbed out via Metro resolver due to a call-bind
+// circular dependency issue. Check if the module is actually available.
+const notificationsAvailable = typeof Notifications.setNotificationHandler === 'function';
+
+// Configure how notifications are handled when the app is in foreground.
+if (notificationsAvailable && Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -61,7 +64,7 @@ function normalizeBaseUrl(baseUrl: string): string {
  * Request notification permissions and configure Android channels
  */
 async function requestPermissions(): Promise<boolean> {
-  if (!Device.isDevice) return false;
+  if (!Device.isDevice || !notificationsAvailable) return false;
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -89,7 +92,7 @@ async function requestPermissions(): Promise<boolean> {
  * Get Expo push token for this device
  */
 async function getPushToken(): Promise<string | null> {
-  if (!Device.isDevice) return null;
+  if (!Device.isDevice || !notificationsAvailable) return null;
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId
     ?? Constants.easConfig?.projectId;
@@ -197,7 +200,7 @@ export async function isRegisteredWithServer(): Promise<boolean> {
  * Clear all notifications and badge (call when app opens)
  */
 export async function clearNotifications(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || !notificationsAvailable) return;
   await Notifications.dismissAllNotificationsAsync();
   await Notifications.setBadgeCountAsync(0);
 }
@@ -256,7 +259,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
   // Initialize state
   useEffect(() => {
     async function init() {
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== 'web' && notificationsAvailable) {
         const { status } = await Notifications.getPermissionsAsync();
         setPermissionStatus(status);
       }
@@ -266,7 +269,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
       setIsLoading(false);
 
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== 'web' && notificationsAvailable) {
         // Check if app was opened via notification tap
         const lastResponse = await Notifications.getLastNotificationResponseAsync();
         if (lastResponse) {
@@ -289,7 +292,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
   // Set up notification tap listener (native only)
   useEffect(() => {
-    if (Platform.OS === 'web') return;
+    if (Platform.OS === 'web' || !notificationsAvailable) return;
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as NotificationData;
       if (data && onTapRef.current) {
@@ -304,7 +307,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
     const success = await registerWithServer(baseUrl, apiKey);
     if (success) {
       setIsRegistered(true);
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== 'web' && notificationsAvailable) {
         const { status } = await Notifications.getPermissionsAsync();
         setPermissionStatus(status);
       }

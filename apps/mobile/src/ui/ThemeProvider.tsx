@@ -30,11 +30,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: ReactNode;
-  /** Initial theme mode (optional, defaults to 'system') */
+  /** Initial theme mode (optional, defaults to 'frost') */
   initialMode?: ThemeMode;
 }
 
-export function ThemeProvider({ children, initialMode = 'system' }: ThemeProviderProps) {
+export function ThemeProvider({ children, initialMode = 'frost' }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>(initialMode);
   const [isLoaded, setIsLoaded] = useState(false);

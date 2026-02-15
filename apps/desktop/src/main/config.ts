@@ -71,7 +71,7 @@ const getConfig = () => {
     // Hide floating panel when main app is focused (default: enabled)
     hidePanelWhenMainFocused: true,
     // Theme preference defaults
-    themePreference: "frost",
+    themePreference: "system",
 
     // Parakeet STT defaults
     parakeetNumThreads: 2,

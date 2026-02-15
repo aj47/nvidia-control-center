@@ -27,13 +27,13 @@ config.resolver.unstable_enablePackageExports = true;
 // 5. Resolve symlinks to real paths for pnpm compatibility
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // On web, stub out expo-notifications since it's a native-only module.
-  // This prevents its Node.js polyfill dependencies (assert -> call-bind) from
-  // breaking the Metro web bundle.
-  if (platform === 'web' && (
+  // Stub out expo-notifications on ALL platforms.
+  // Its dependency chain (assert -> call-bind@1.0.8) has a circular import that
+  // causes "callBind is not a function" at runtime on both web and Android.
+  if (
     moduleName === 'expo-notifications' ||
     moduleName.startsWith('expo-notifications/')
-  )) {
+  ) {
     return { type: 'empty' };
   }
 
