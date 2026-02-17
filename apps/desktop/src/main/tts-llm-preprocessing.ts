@@ -2,30 +2,38 @@
  * LLM-driven TTS text preprocessing
  * Uses an LLM to intelligently convert text to speech-friendly format
  * for more natural and context-aware speech output.
- *
- * NOTE: TTS is disabled after refactoring to only support Nemotron + Parakeet.
- * These functions are kept for potential future use.
  */
 
 import { makeTextCompletionWithFetch } from "./llm-fetch"
 import { configStore } from "./config"
+import { Config } from "@shared/types"
 import { diagnosticsService } from "./diagnostics"
 import { preprocessTextForTTS as regexPreprocessTextForTTS } from "@nvidia-cc/shared"
 
 /**
- * Builds a TTS preprocessing prompt with default settings.
+ * Builds a dynamic TTS preprocessing prompt based on user config settings.
+ * Respects ttsRemoveCodeBlocks, ttsRemoveUrls, and ttsConvertMarkdown settings.
  */
-function buildTTSPreprocessingPrompt(): string {
-  const instructions: string[] = [
-    "- Remove code blocks and replace with brief description if relevant",
-    "- Remove URLs but mention if a link was shared",
-    "- Convert markdown formatting to natural speech",
-    "- Expand abbreviations and acronyms appropriately (e.g., \"Dr.\" → \"Doctor\", \"API\" → \"A P I\")",
-    "- Convert technical symbols to spoken words (e.g., \"&&\" → \"and\", \"=>\" → \"arrow\")",
-    "- Remove or describe any content that wouldn't make sense when spoken aloud",
-    "- Keep the core meaning but optimize for listening",
-    "- Do NOT add any commentary, just output the converted text",
-  ]
+function buildTTSPreprocessingPrompt(config: Config): string {
+  const instructions: string[] = []
+
+  // Only add instructions for enabled options
+  if (config.ttsRemoveCodeBlocks ?? true) {
+    instructions.push("- Remove code blocks and replace with brief description if relevant")
+  }
+  if (config.ttsRemoveUrls ?? true) {
+    instructions.push("- Remove URLs but mention if a link was shared")
+  }
+  if (config.ttsConvertMarkdown ?? true) {
+    instructions.push("- Convert markdown formatting to natural speech")
+  }
+
+  // Always include these LLM-specific enhancements (the main value of LLM preprocessing)
+  instructions.push("- Expand abbreviations and acronyms appropriately (e.g., \"Dr.\" → \"Doctor\", \"API\" → \"A P I\")")
+  instructions.push("- Convert technical symbols to spoken words (e.g., \"&&\" → \"and\", \"=>\" → \"arrow\")")
+  instructions.push("- Remove or describe any content that wouldn't make sense when spoken aloud")
+  instructions.push("- Keep the core meaning but optimize for listening")
+  instructions.push("- Do NOT add any commentary, just output the converted text")
 
   return `Convert this AI response to natural spoken text.
 ${instructions.join("\n")}
@@ -50,12 +58,12 @@ export async function preprocessTextForTTSWithLLM(
 ): Promise<string> {
   const config = configStore.get()
 
-  // Use Nemotron for LLM preprocessing (the only available provider)
-  const llmProviderId = providerId || config.transcriptPostProcessingProviderId || "nemotron"
+  // Use the configured TTS LLM provider, or fall back to transcript post-processing provider, or nemotron
+  const llmProviderId = providerId || config.ttsLLMPreprocessingProviderId || config.transcriptPostProcessingProviderId || "nemotron"
 
   try {
-    // Build the prompt with default settings, then append the text
-    const prompt = buildTTSPreprocessingPrompt() + text
+    // Build the dynamic prompt based on user config, then append the text
+    const prompt = buildTTSPreprocessingPrompt(config) + text
 
     // Make the LLM call
     const result = await makeTextCompletionWithFetch(prompt, llmProviderId)
@@ -80,23 +88,36 @@ export async function preprocessTextForTTSWithLLM(
       error
     )
 
-    // Fall back to regex-based preprocessing with default options
+    // Fall back to regex-based preprocessing with user-configured options
     const preprocessingOptions = {
-      removeCodeBlocks: true,
-      removeUrls: true,
-      convertMarkdown: true,
+      removeCodeBlocks: config.ttsRemoveCodeBlocks ?? true,
+      removeUrls: config.ttsRemoveUrls ?? true,
+      convertMarkdown: config.ttsConvertMarkdown ?? true,
     }
     return regexPreprocessTextForTTS(text, preprocessingOptions)
   }
 }
 
 /**
- * Checks if LLM-based TTS preprocessing is available.
- * Returns true if Nemotron API key is configured.
- * NOTE: TTS is currently disabled, this always returns false.
+ * Checks if LLM-based TTS preprocessing is enabled and available.
+ * Returns true if the feature is enabled and API keys are configured.
  */
 export function isLLMPreprocessingAvailable(): boolean {
-  // TTS is disabled - no providers available after refactor
-  return false
+  const config = configStore.get()
+
+  if (!config.ttsUseLLMPreprocessing) {
+    return false
+  }
+
+  // Check if the provider has API keys configured
+  const providerId = config.ttsLLMPreprocessingProviderId || config.transcriptPostProcessingProviderId || "nemotron"
+
+  switch (providerId) {
+    case "nemotron":
+      return !!config.nemotronApiKey
+    default:
+      // For unknown providers, return false
+      return false
+  }
 }
 

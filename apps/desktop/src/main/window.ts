@@ -294,6 +294,15 @@ export const MIN_WAVEFORM_WIDTH = calculateMinWaveformWidth() // ~312px
 // Total: ~110px
 export const WAVEFORM_MIN_HEIGHT = 110
 
+// Minimum height for waveform panel with transcription preview:
+// - Drag bar: 24px
+// - Waveform (shrunk): 12px
+// - Preview text: ~32px (2 lines)
+// - Submit button + hint: 36px
+// - Padding/margins: ~26px
+// Total: ~150px
+export const WAVEFORM_WITH_PREVIEW_HEIGHT = 150
+
 // Minimum height for text input panel:
 // - Hint text row: ~20px
 // - Textarea: ~80px minimum for usability
@@ -653,7 +662,7 @@ export async function showPanelWindowAndStartRecording(fromButtonClick?: boolean
   showPanelWindow()
 }
 
-export async function showPanelWindowAndStartMcpRecording(conversationId?: string, sessionId?: string, fromTile?: boolean, fromButtonClick?: boolean) {
+export async function showPanelWindowAndStartMcpRecording(conversationId?: string, sessionId?: string, fromTile?: boolean, fromButtonClick?: boolean, conversationTitle?: string, isStillHeld?: () => boolean) {
   // Capture focus before showing panel
   try {
     const focusedApp = await getFocusedAppInfo()
@@ -677,12 +686,13 @@ export async function showPanelWindowAndStartMcpRecording(conversationId?: strin
   // This prevents lost IPC messages right after app launch when webContents may not have finished loading
   // Pass fromTile and fromButtonClick flags so panel knows how to behave after recording ends
   whenPanelReady(() => {
-    getWindowRendererHandlers("panel")?.startMcpRecording.send({ conversationId, sessionId, fromTile, fromButtonClick })
+    if (isStillHeld && !isStillHeld()) return
+    getWindowRendererHandlers("panel")?.startMcpRecording.send({ conversationId, conversationTitle, sessionId, fromTile, fromButtonClick })
   })
   showPanelWindow()
 }
 
-export async function showPanelWindowAndShowTextInput(initialText?: string) {
+export async function showPanelWindowAndShowTextInput(initialText?: string, conversationId?: string, conversationTitle?: string) {
   // Capture focus before showing panel
   try {
     const focusedApp = await getFocusedAppInfo()
@@ -699,7 +709,10 @@ export async function showPanelWindowAndShowTextInput(initialText?: string) {
   resizePanelForTextInput()
 
   showPanelWindow() // This will now use textInput mode positioning
-  getWindowRendererHandlers("panel")?.showTextInput.send({ initialText })
+  // Guard against early IPC loss right after app launch (mirrors recording start paths)
+  whenPanelReady(() => {
+    getWindowRendererHandlers("panel")?.showTextInput.send({ initialText, conversationId, conversationTitle })
+  })
 }
 
 export function makePanelWindowClosable() {
@@ -904,6 +917,38 @@ export function resizePanelForWaveform() {
     win.setPosition(position.x, position.y)
   } catch (e) {
     logApp("[resizePanelForWaveform] Failed to resize panel:", e)
+  }
+}
+
+/**
+ * Resize the panel to accommodate transcription preview text during recording.
+ * Grows the panel from WAVEFORM_MIN_HEIGHT to WAVEFORM_WITH_PREVIEW_HEIGHT.
+ * When showPreview is false, shrinks back to WAVEFORM_MIN_HEIGHT.
+ */
+export function resizePanelForWaveformPreview(showPreview: boolean) {
+  const win = WINDOWS.get("panel")
+  if (!win) return
+
+  try {
+    const [currentWidth, currentHeight] = win.getSize()
+    const targetHeight = showPreview ? WAVEFORM_WITH_PREVIEW_HEIGHT : WAVEFORM_MIN_HEIGHT
+
+    // Skip if already at target height
+    if (currentHeight === targetHeight) return
+
+    const minWidth = Math.max(200, MIN_WAVEFORM_WIDTH)
+    const newWidth = Math.max(currentWidth, minWidth)
+
+    logApp(`[resizePanelForWaveformPreview] Resizing panel from ${currentWidth}x${currentHeight} to ${newWidth}x${targetHeight} (preview=${showPreview})`)
+
+    win.setSize(newWidth, targetHeight)
+    notifyPanelSizeChanged(newWidth, targetHeight)
+
+    // Reposition to maintain the panel's anchor point
+    const position = calculatePanelPosition({ width: newWidth, height: targetHeight }, "normal")
+    win.setPosition(position.x, position.y)
+  } catch (e) {
+    logApp("[resizePanelForWaveformPreview] Failed to resize panel:", e)
   }
 }
 

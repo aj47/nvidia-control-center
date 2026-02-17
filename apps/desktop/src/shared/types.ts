@@ -1,4 +1,4 @@
-import type { CHAT_PROVIDER_ID, STT_PROVIDER_ID } from "."
+import type { CHAT_PROVIDER_ID, STT_PROVIDER_ID, TTS_PROVIDER_ID } from "."
 import type { ToolCall, ToolResult } from '@nvidia-cc/shared'
 
 export type { ToolCall, ToolResult, BaseChatMessage, ConversationHistoryMessage, ChatApiResponse } from '@nvidia-cc/shared'
@@ -418,6 +418,8 @@ export type ProfileModelConfig = {
   // Transcript Post-Processing settings - Only Nemotron is supported
   transcriptPostProcessingProviderId?: "nemotron"
   transcriptPostProcessingNemotronModel?: string
+  // TTS Provider settings
+  ttsProviderId?: "kitten" | "supertonic"
 }
 
 // Per-profile skills configuration
@@ -1144,10 +1146,41 @@ export type Config = {
   modelPresets?: ModelPreset[]
   currentModelPresetId?: string
 
+  // Speech-to-Text Language Configuration
+  sttLanguage?: string
+
+  // Transcription Preview - show live transcription while recording
+  transcriptionPreviewEnabled?: boolean
+
   // Parakeet (Local) STT Configuration
   parakeetModelPath?: string // Optional custom model path
   parakeetNumThreads?: number // Number of threads (default: 2)
   parakeetModelDownloaded?: boolean // Whether model has been downloaded
+
+  // Text-to-Speech Configuration
+  ttsEnabled?: boolean
+  ttsAutoPlay?: boolean
+  ttsProviderId?: TTS_PROVIDER_ID
+
+  // Kitten (Local) TTS Configuration
+  kittenModelDownloaded?: boolean // Whether model has been downloaded
+  kittenVoiceId?: number // Voice ID 0-7 (default: 0 for Voice 2 - Male)
+
+  // Supertonic (Local) TTS Configuration
+  supertonicModelDownloaded?: boolean // Whether model has been downloaded
+  supertonicVoice?: string // Voice style ID (e.g., "M1", "F1") - default "M1"
+  supertonicLanguage?: string // Language code (en, ko, es, pt, fr) - default "en"
+  supertonicSpeed?: number // Speech speed (default: 1.05)
+  supertonicSteps?: number // Denoising steps (default: 5, higher = better quality)
+
+  // TTS Text Preprocessing Configuration
+  ttsPreprocessingEnabled?: boolean
+  ttsRemoveCodeBlocks?: boolean
+  ttsRemoveUrls?: boolean
+  ttsConvertMarkdown?: boolean
+  // LLM-based TTS Preprocessing (for more natural speech output)
+  ttsUseLLMPreprocessing?: boolean
+  ttsLLMPreprocessingProviderId?: CHAT_PROVIDER_ID
 
   // Transcript Post-Processing - Only Nemotron is supported
   transcriptPostProcessingEnabled?: boolean
@@ -1191,6 +1224,7 @@ export type Config = {
   mcpAutoPasteEnabled?: boolean
   mcpAutoPasteDelay?: number
   mcpMaxIterations?: number
+  mcpUnlimitedIterations?: boolean
 
   // MCP Server Configuration
   mcpConfig?: MCPConfig
@@ -1211,6 +1245,8 @@ export type Config = {
   // Provider Section Collapse Configuration
   providerSectionCollapsedNemotron?: boolean
   providerSectionCollapsedParakeet?: boolean
+  providerSectionCollapsedKitten?: boolean
+  providerSectionCollapsedSupertonic?: boolean
 
   // Panel Position Configuration
   panelPosition?:

@@ -213,6 +213,32 @@ function calculateBackoffDelay(
   return Math.max(0, cappedDelay + jitter)
 }
 
+
+/**
+ * Sleep for the specified delay while allowing the kill switch to interrupt.
+ * Checks state.shouldStopAgent immediately and roughly every 100ms during the wait.
+ * Throws an error if the emergency stop is triggered.
+ */
+async function interruptibleDelay(delay: number): Promise<void> {
+  // Immediate check (also covers delay === 0 case semantics)
+  if (state.shouldStopAgent) {
+    throw new Error("Aborted by emergency stop")
+  }
+
+  if (delay <= 0) {
+    return
+  }
+
+  const startTime = Date.now()
+  while (Date.now() - startTime < delay) {
+    if (state.shouldStopAgent) {
+      throw new Error("Aborted by emergency stop")
+    }
+    const remaining = delay - (Date.now() - startTime)
+    await new Promise(resolve => setTimeout(resolve, Math.min(100, Math.max(0, remaining))))
+  }
+}
+
 /**
  * Check if an error is an empty response error.
  * Empty responses should fail fast without backoff since they typically indicate:
@@ -250,11 +276,6 @@ function isRetryableError(error: unknown): boolean {
       error.name === "AbortError" ||
       error.message.toLowerCase().includes("abort")
     ) {
-      return false
-    }
-
-    // Tool-calling-unsupported errors should never be retried
-    if ((error as any).isToolCallingUnsupported) {
       return false
     }
 
@@ -457,12 +478,14 @@ async function withRetry<T>(
         })
       }
 
-      // Wait before retry
-      if (state.shouldStopAgent) {
+      // Wait before retrying with interruptible delay
+      // Wrap in try-catch to ensure clearRetryStatus is called on emergency stop
+      try {
+        await interruptibleDelay(delay)
+      } catch (abortError) {
         clearRetryStatus()
-        throw new Error("Aborted by emergency stop")
+        throw abortError
       }
-      await new Promise((resolve) => setTimeout(resolve, delay))
       attempt++
     }
   }
@@ -622,38 +645,6 @@ export async function makeLLMCallWithFetch(
             toolChoice: convertedTools?.tools ? "auto" : undefined,
           })
         } catch (error) {
-          // Detect model-doesn't-support-tool-calling errors
-          // NVIDIA API returns 404 with "Function ... Not found" when the model doesn't support tools
-          if (error instanceof Error && convertedTools?.tools) {
-            const errorWithStatus = error as { statusCode?: number; status?: number; responseBody?: string }
-            const statusCode = errorWithStatus.statusCode ?? errorWithStatus.status
-            const errorMsg = error.message.toLowerCase()
-            const isToolCallingUnsupported =
-              (statusCode === 404 && (errorMsg.includes("function") || errorMsg.includes("not found"))) ||
-              (errorMsg.includes("function") && errorMsg.includes("not found")) ||
-              (errorMsg.includes("does not support") && (errorMsg.includes("tool") || errorMsg.includes("function")))
-
-            if (isToolCallingUnsupported) {
-              const modelDisplayName = modelName
-              const toolCallError = new Error(
-                `Model "${modelDisplayName}" does not support tool/function calling. ` +
-                `Please switch to a model that supports tool calling (e.g., nvidia/llama-3.1-nemotron-70b-instruct) ` +
-                `in Settings → Providers → Model Selection.`
-              )
-              // Tag the error so the agent loop can detect it
-              ;(toolCallError as any).isToolCallingUnsupported = true
-              ;(toolCallError as any).modelName = modelDisplayName
-
-              if (generationId) {
-                endLLMGeneration(generationId, {
-                  level: "ERROR",
-                  statusMessage: toolCallError.message,
-                })
-              }
-              throw toolCallError
-            }
-          }
-
           // End Langfuse generation with error before rethrowing
           if (generationId) {
             endLLMGeneration(generationId, {

@@ -33,6 +33,7 @@ const getConfig = () => {
     mcpAutoPasteEnabled: false,
     mcpAutoPasteDelay: 1000, // 1 second delay by default
     mcpMaxIterations: 10, // Default max iterations for agent mode
+    mcpUnlimitedIterations: false, // Default to limited iterations
     textInputEnabled: true,
 
     // Text input: On Windows, use Ctrl+Shift+T to avoid browser new tab conflict
@@ -81,9 +82,27 @@ const getConfig = () => {
 	    launchAtLogin: false,
 	    hideDockIcon: false,
 
+    // TTS defaults
+    ttsEnabled: true,
+    ttsAutoPlay: true,
+    ttsProviderId: "kitten",
+    ttsPreprocessingEnabled: true,
+    ttsRemoveCodeBlocks: true,
+    ttsRemoveUrls: true,
+    ttsConvertMarkdown: true,
+    // LLM-based TTS preprocessing (off by default - uses regex for fast/free processing)
+    ttsUseLLMPreprocessing: false,
+    // Supertonic TTS defaults
+    supertonicVoice: "M1",
+    supertonicLanguage: "en",
+    supertonicSpeed: 1.05,
+    supertonicSteps: 5,
+
     // Provider Section Collapse defaults - collapsed by default
     providerSectionCollapsedNemotron: true,
     providerSectionCollapsedParakeet: true,
+    providerSectionCollapsedKitten: true,
+    providerSectionCollapsedSupertonic: true,
 
     // Default providers - only Nemotron and Parakeet are available
     sttProviderId: "parakeet",
@@ -200,11 +219,33 @@ function getActivePreset(config: Partial<Config>): ModelPreset | undefined {
   return allPresets.find(p => p.id === currentPresetId)
 }
 
+/**
+ * Sync the active preset's credentials and model preferences to legacy config fields for backward compatibility.
+ * Always syncs all fields together to keep them consistent with the active preset.
+ */
+function syncPresetToLegacyFields(config: Partial<Config>): Partial<Config> {
+  const activePreset = getActivePreset(config)
+  if (activePreset) {
+    // Always sync both fields to keep them consistent with the active preset
+    // If preset has empty values, legacy fields should reflect that
+    config.nemotronApiKey = activePreset.apiKey || ''
+    config.nemotronBaseUrl = activePreset.baseUrl || ''
+
+    // Always sync model preferences to keep legacy fields consistent with the active preset
+    // If preset has empty/undefined values, legacy fields should reflect that
+    config.mcpToolsNemotronModel = activePreset.mcpToolsModel || ''
+    config.transcriptPostProcessingNemotronModel = activePreset.transcriptProcessingModel || ''
+  }
+  return config
+}
+
 class ConfigStore {
   config: Config | undefined
 
   constructor() {
-    this.config = getConfig() as Config
+    const loadedConfig = getConfig()
+    // Sync active preset credentials to legacy fields on startup
+    this.config = syncPresetToLegacyFields(loadedConfig) as Config
   }
 
   get(): Config {
@@ -212,7 +253,8 @@ class ConfigStore {
   }
 
   save(config: Config) {
-    this.config = config
+    // Sync active preset credentials before saving
+    this.config = syncPresetToLegacyFields(config) as Config
     fs.mkdirSync(dataFolder, { recursive: true })
     fs.writeFileSync(configPath, JSON.stringify(this.config))
   }

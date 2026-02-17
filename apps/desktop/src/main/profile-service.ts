@@ -13,6 +13,8 @@ const RESERVED_SERVER_NAMES = ["nvidia-cc-settings"]
 const VALID_PROVIDER_IDS = ["nemotron"]
 // STT supports only parakeet (local)
 const VALID_STT_PROVIDER_IDS = ["parakeet"]
+// TTS supports kitten (local) and supertonic (local)
+const VALID_TTS_PROVIDER_IDS = ["kitten", "supertonic"]
 
 /**
  * Validates the shape of an imported MCP server config
@@ -207,6 +209,13 @@ function isValidModelConfig(config: unknown): boolean {
   // sttProviderId supports only parakeet (local)
   if (c.sttProviderId !== undefined) {
     if (typeof c.sttProviderId !== "string" || !VALID_STT_PROVIDER_IDS.includes(c.sttProviderId as string)) {
+      return false
+    }
+  }
+
+  // ttsProviderId supports kitten (local) and supertonic (local)
+  if (c.ttsProviderId !== undefined) {
+    if (typeof c.ttsProviderId !== "string" || !VALID_TTS_PROVIDER_IDS.includes(c.ttsProviderId as string)) {
       return false
     }
   }
@@ -520,6 +529,8 @@ class ProfileService {
       // Transcript Post-Processing settings
       ...(modelConfig.transcriptPostProcessingProviderId !== undefined && { transcriptPostProcessingProviderId: modelConfig.transcriptPostProcessingProviderId }),
       ...(modelConfig.transcriptPostProcessingNemotronModel !== undefined && { transcriptPostProcessingNemotronModel: modelConfig.transcriptPostProcessingNemotronModel }),
+      // TTS Provider settings
+      ...(modelConfig.ttsProviderId !== undefined && { ttsProviderId: modelConfig.ttsProviderId }),
     }
 
     const updatedProfile = {

@@ -65,12 +65,12 @@ export function Component() {
     mutationFn: async ({ blob, duration }: { blob: Blob; duration: number }) => {
       setIsTranscribing(true)
       // Decode webm audio to raw PCM samples for Parakeet STT
-      const { decodeAudioBlob } = await import("../lib/audio-decoder")
-      const pcmSamples = await decodeAudioBlob(blob, 16000)
+      const { decodeBlobToPcm } = await import("../lib/audio-utils")
+      const pcmBuffer = await decodeBlobToPcm(blob, 16000)
       const result = await tipcClient.createRecording({
-        recording: pcmSamples.buffer as ArrayBuffer,
+        recording: await blob.arrayBuffer(),
+        pcmRecording: pcmBuffer,
         duration,
-        isDecodedPCM: true,
       })
       return result
     },

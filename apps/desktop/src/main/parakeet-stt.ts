@@ -299,10 +299,7 @@ class OfflineRecognizerWrapper implements SherpaOnnxOfflineRecognizer {
       throw new Error("Native addon not loaded")
     }
     const jsonStr = addon.getOfflineStreamResultAsJson(stream.handle)
-    // Sherpa-onnx may return JSON with nan values (from C++/Python) which are not valid JSON
-    // Replace nan with null to make it valid JSON
-    const sanitizedJsonStr = jsonStr.replace(/\bnan\b/gi, "null")
-    return JSON.parse(sanitizedJsonStr)
+    return JSON.parse(jsonStr)
   }
 }
 
@@ -645,6 +642,16 @@ export async function transcribe(
   const currentRecognizer = recognizer
   if (!currentRecognizer) {
     throw new Error("Recognizer not initialized. Call initializeRecognizer() first.")
+  }
+
+  // Validate that the buffer contains properly-aligned float32 PCM data.
+  // Each float32 sample is 4 bytes; if the byte length isn't divisible by 4 the
+  // buffer is not valid PCM (e.g. raw webm/compressed audio was passed instead).
+  if (audioBuffer.byteLength % 4 !== 0) {
+    throw new Error(
+      `Invalid PCM audio buffer: byte length ${audioBuffer.byteLength} is not a multiple of 4. ` +
+      `Audio must be decoded to float32 PCM before transcription with Parakeet.`
+    )
   }
 
   // Convert ArrayBuffer to Float32Array

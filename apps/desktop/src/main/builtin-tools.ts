@@ -271,6 +271,10 @@ const toolHandlers: Record<string, ToolHandler> = {
       ...(profile.modelConfig?.transcriptPostProcessingNemotronModel && {
         transcriptPostProcessingNemotronModel: profile.modelConfig.transcriptPostProcessingNemotronModel,
       }),
+      // TTS Provider settings
+      ...(profile.modelConfig?.ttsProviderId && {
+        ttsProviderId: profile.modelConfig.ttsProviderId,
+      }),
     }
     configStore.save(updatedConfig)
 
@@ -593,6 +597,7 @@ const toolHandlers: Record<string, ToolHandler> = {
             postProcessingEnabled: postProcessingEnabled,
             postProcessingPromptConfigured: postProcessingPromptConfigured,
             postProcessingEffective: postProcessingEffective,
+            ttsEnabled: config.ttsEnabled ?? true,
             toolApprovalEnabled: config.mcpRequireApprovalBeforeToolCall ?? false,
             verificationEnabled: config.mcpVerifyCompletionEnabled ?? true,
             messageQueueEnabled: config.mcpMessageQueueEnabled ?? true,
@@ -602,6 +607,7 @@ const toolHandlers: Record<string, ToolHandler> = {
               postProcessingEnabled: "When enabled AND a prompt is configured, transcripts are cleaned up and improved using AI",
               postProcessingPromptConfigured: "Whether a post-processing prompt has been configured in settings",
               postProcessingEffective: "True only when post-processing is both enabled AND a prompt is configured",
+              ttsEnabled: "When enabled, assistant responses are read aloud",
               toolApprovalEnabled: "When enabled, a confirmation dialog appears before any tool executes (affects new sessions only)",
               verificationEnabled: "When enabled, the agent verifies task completion before finishing. Disable for faster responses without verification",
               messageQueueEnabled: "When enabled, users can queue messages while the agent is processing",
@@ -661,19 +667,40 @@ const toolHandlers: Record<string, ToolHandler> = {
     }
   },
 
-  toggle_tts: async (_args: Record<string, unknown>): Promise<MCPToolResult> => {
-    // TTS is not available - no providers configured
+  toggle_tts: async (args: Record<string, unknown>): Promise<MCPToolResult> => {
+    const config = configStore.get()
+    const currentValue = config.ttsEnabled ?? true
+
+    // Validate enabled parameter if provided (optional)
+    if (args.enabled !== undefined && typeof args.enabled !== "boolean") {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ success: false, error: "enabled must be a boolean if provided" }) }],
+        isError: true,
+      }
+    }
+
+    // Determine new value: use provided value or toggle
+    const enabled = typeof args.enabled === "boolean" ? args.enabled : !currentValue
+
+    configStore.save({
+      ...config,
+      ttsEnabled: enabled,
+    })
+
     return {
       content: [
         {
           type: "text",
           text: JSON.stringify({
-            success: false,
-            error: "Text-to-speech is not available. No TTS providers are configured.",
+            success: true,
+            setting: "ttsEnabled",
+            previousValue: currentValue,
+            newValue: enabled,
+            message: `Text-to-speech has been ${enabled ? "enabled" : "disabled"}`,
           }, null, 2),
         },
       ],
-      isError: true,
+      isError: false,
     }
   },
 

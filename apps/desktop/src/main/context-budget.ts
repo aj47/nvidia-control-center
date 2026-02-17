@@ -349,6 +349,11 @@ function getModelContextWindow(providerId: string, model: string): number {
   return 64_000
 }
 
+async function fetchGroqContextWindow(_model: string): Promise<number | undefined> {
+  // Groq is not available in the NVIDIA version — always return undefined
+  return undefined
+}
+
 export async function getMaxContextTokens(providerId: string, model: string): Promise<number> {
   const cfg = configStore.get()
   const override = cfg.mcpMaxContextTokensOverride
@@ -357,8 +362,12 @@ export async function getMaxContextTokens(providerId: string, model: string): Pr
   const k = key(providerId, model)
   if (contextWindowCache.has(k)) return contextWindowCache.get(k)!
 
+  let result: number | undefined
+  if (providerId === "groq") {
+    result = await fetchGroqContextWindow(model)
+  }
   // Use model registry with fuzzy matching for context window lookup
-  const result = getModelContextWindow(providerId, model)
+  if (!result) result = getModelContextWindow(providerId, model)
 
   contextWindowCache.set(k, result)
   return result

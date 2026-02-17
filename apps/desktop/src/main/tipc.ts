@@ -19,6 +19,7 @@ import {
   WAVEFORM_MIN_HEIGHT,
   MIN_WAVEFORM_WIDTH,
   clearPanelOpenedWithMain,
+  resizePanelForWaveformPreview,
 } from "./window"
 import {
   app,
@@ -119,6 +120,7 @@ function float32ToWav(samples: Float32Array, sampleRate: number): Buffer {
 
 async function initializeMcpWithProgress(config: Config, sessionId: string): Promise<void> {
   const shouldStop = () => agentSessionStateManager.shouldStopSession(sessionId)
+  const effectiveMaxIterations = config.mcpUnlimitedIterations ? Infinity : (config.mcpMaxIterations ?? 10)
 
   if (shouldStop()) {
     return
@@ -129,7 +131,7 @@ async function initializeMcpWithProgress(config: Config, sessionId: string): Pro
   await emitAgentProgress({
     sessionId,
     currentIteration: 0,
-    maxIterations: config.mcpMaxIterations ?? 10,
+    maxIterations: effectiveMaxIterations,
     steps: [
       {
         id: `mcp_init_${Date.now()}`,
@@ -156,7 +158,7 @@ async function initializeMcpWithProgress(config: Config, sessionId: string): Pro
       await emitAgentProgress({
         sessionId,
         currentIteration: 0,
-        maxIterations: config.mcpMaxIterations ?? 10,
+        maxIterations: effectiveMaxIterations,
         steps: [
           {
             id: `mcp_init_${Date.now()}`,
@@ -189,7 +191,7 @@ async function initializeMcpWithProgress(config: Config, sessionId: string): Pro
   await emitAgentProgress({
     sessionId,
     currentIteration: 0,
-    maxIterations: config.mcpMaxIterations ?? 10,
+    maxIterations: effectiveMaxIterations,
     steps: [
       {
         id: `mcp_init_complete_${Date.now()}`,
@@ -212,6 +214,7 @@ async function processWithAgentMode(
   startSnoozed: boolean = false, // Whether to start session snoozed (default: false to show panel)
 ): Promise<string> {
   const config = configStore.get()
+  const effectiveMaxIterations = config.mcpUnlimitedIterations ? Infinity : (config.mcpMaxIterations ?? 10)
 
   // Check if ACP main agent mode is enabled - route to ACP agent instead of LLM API
   if (config.mainAgentMode === "acp" && config.mainAgentName) {
@@ -319,7 +322,7 @@ async function processWithAgentMode(
         await emitAgentProgress({
           sessionId,
           currentIteration: 0, // Will be updated by the agent loop
-          maxIterations: config.mcpMaxIterations ?? 10,
+          maxIterations: effectiveMaxIterations,
           steps: [],
           isComplete: false,
           pendingToolApproval: {
@@ -336,7 +339,7 @@ async function processWithAgentMode(
         await emitAgentProgress({
           sessionId,
           currentIteration: 0,
-          maxIterations: config.mcpMaxIterations ?? 10,
+          maxIterations: effectiveMaxIterations,
           steps: [],
           isComplete: false,
           pendingToolApproval: undefined, // Explicitly clear to sync state across all windows
@@ -425,7 +428,7 @@ async function processWithAgentMode(
       text,
       availableTools,
       executeToolCall,
-      config.mcpMaxIterations ?? 10, // Use configured max iterations or default to 10
+      effectiveMaxIterations, // Use configured max iterations (or Infinity if unlimited)
       previousConversationHistory,
       conversationId, // Pass conversation ID for linking to conversation history
       sessionId, // Pass session ID for progress routing and isolation
@@ -448,7 +451,7 @@ async function processWithAgentMode(
       conversationId: conversationId || "",
       conversationTitle: conversationTitle,
       currentIteration: 1,
-      maxIterations: config.mcpMaxIterations ?? 10,
+      maxIterations: effectiveMaxIterations,
       steps: [{
         id: `error_${Date.now()}`,
         type: "thinking",
@@ -659,6 +662,12 @@ export const router = {
   resizePanelToNormal: t.procedure.action(async () => {
     resizePanelToNormal()
   }),
+
+  resizePanelForWaveformPreview: t.procedure
+    .input<{ showPreview: boolean }>()
+    .action(async ({ input }) => {
+      resizePanelForWaveformPreview(input.showPreview)
+    }),
 
   setPanelMode: t.procedure
     .input<{ mode: "normal" | "agent" | "textInput" }>()
@@ -1115,11 +1124,53 @@ export const router = {
       }
     }),
 
+  // Supertonic (local) TTS model management
+  getSupertonicModelStatus: t.procedure.action(async () => {
+    const { getSupertonicModelStatus } = await import('./supertonic-tts')
+    return getSupertonicModelStatus()
+  }),
+
+  downloadSupertonicModel: t.procedure.action(async () => {
+    const { downloadSupertonicModel } = await import('./supertonic-tts')
+    await downloadSupertonicModel((progress) => {
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
+          win.webContents.send('supertonic-model-download-progress', progress)
+        }
+      })
+    })
+    return { success: true }
+  }),
+
+  synthesizeWithSupertonic: t.procedure
+    .input<{
+      text: string
+      voice?: string
+      lang?: string
+      speed?: number
+      steps?: number
+    }>()
+    .action(async ({ input }) => {
+      const { synthesize } = await import('./supertonic-tts')
+      const result = await synthesize(
+        input.text,
+        input.voice,
+        input.lang,
+        input.speed,
+        input.steps,
+      )
+      const wavBuffer = float32ToWav(result.samples, result.sampleRate)
+      return {
+        audio: wavBuffer.toString('base64'),
+        sampleRate: result.sampleRate
+      }
+    }),
+
   createRecording: t.procedure
     .input<{
       recording: ArrayBuffer
+      pcmRecording?: ArrayBuffer
       duration: number
-      isDecodedPCM?: boolean // When true, recording contains raw PCM Float32 samples
     }>()
     .action(async ({ input }) => {
       fs.mkdirSync(recordingsFolder, { recursive: true })
@@ -1135,9 +1186,11 @@ export const router = {
       // Initialize recognizer if needed
       await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-      // Audio is now decoded to raw PCM Float32 samples by the renderer
-      // using Web Audio API before being sent via IPC
-      transcript = await parakeetStt.transcribe(input.recording, 16000)
+      // Use pcmRecording (pre-decoded PCM Float32 samples) for Parakeet
+      if (!input.pcmRecording) {
+        throw new Error("Parakeet STT requires pre-decoded float32 PCM audio. pcmRecording was not provided.")
+      }
+      transcript = await parakeetStt.transcribe(input.pcmRecording, 16000)
       transcript = await postProcessTranscript(transcript)
 
       const history = getRecordingHistory()
@@ -1182,6 +1235,29 @@ export const router = {
           }
         }, pasteDelay)
       }
+    }),
+
+  transcribeChunk: t.procedure
+    .input<{
+      recording: ArrayBuffer
+      pcmRecording?: ArrayBuffer
+    }>()
+    .action(async ({ input }) => {
+      const config = configStore.get()
+
+      // Only Parakeet (local) STT is supported
+      if (!parakeetStt.isModelReady()) {
+        return { text: "" }
+      }
+
+      await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
+
+      if (!input.pcmRecording) {
+        return { text: "" }
+      }
+
+      const transcript = await parakeetStt.transcribe(input.pcmRecording, 16000)
+      return { text: transcript }
     }),
 
   createTextInput: t.procedure
@@ -1347,8 +1423,8 @@ export const router = {
   createMcpRecording: t.procedure
     .input<{
       recording: ArrayBuffer
+      pcmRecording?: ArrayBuffer
       duration: number
-      isDecodedPCM?: boolean // When true, recording contains raw PCM Float32 samples
       conversationId?: string
       sessionId?: string
       fromTile?: boolean // When true, session runs in background (snoozed) - panel won't show
@@ -1376,14 +1452,16 @@ export const router = {
 
             await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-            // Audio is now decoded to raw PCM Float32 samples by the renderer
-            // using Web Audio API before being sent via IPC
-            transcript = await parakeetStt.transcribe(input.recording, 16000)
+            // Use pcmRecording (pre-decoded PCM Float32 samples) for Parakeet
+            if (!input.pcmRecording) {
+              throw new Error("Parakeet STT requires pre-decoded float32 PCM audio. pcmRecording was not provided.")
+            }
+            transcript = await parakeetStt.transcribe(input.pcmRecording, 16000)
 
-            // Save the recording file (save as .pcm since it's decoded PCM now)
+            // Save the recording file
             const recordingId = Date.now().toString()
             fs.writeFileSync(
-              path.join(recordingsFolder, `${recordingId}.pcm`),
+              path.join(recordingsFolder, `${recordingId}.webm`),
               Buffer.from(input.recording),
             )
 
@@ -1510,9 +1588,11 @@ export const router = {
 
         await parakeetStt.initializeRecognizer(config.parakeetNumThreads)
 
-        // Audio is now decoded to raw PCM Float32 samples by the renderer
-        // using Web Audio API before being sent via IPC
-        transcript = await parakeetStt.transcribe(input.recording, 16000)
+        // Use pcmRecording (pre-decoded PCM Float32 samples) for Parakeet
+        if (!input.pcmRecording) {
+          throw new Error("Parakeet STT requires pre-decoded float32 PCM audio. pcmRecording was not provided.")
+        }
+        transcript = await parakeetStt.transcribe(input.pcmRecording, 16000)
 
       // Create or continue conversation
       let conversationId = input.conversationId
@@ -2343,9 +2423,70 @@ export const router = {
       model?: string
       speed?: number
     }>()
-    .action(async ({ input: _input }) => {
-      // TTS is disabled - no providers available after refactor
-      throw new Error("Text-to-Speech is not available. No TTS providers are configured.")
+    .action(async ({ input }) => {
+      const config = configStore.get()
+
+      if (!config.ttsEnabled) {
+        throw new Error("Text-to-Speech is not enabled")
+      }
+
+      const providerId = input.providerId || config.ttsProviderId || "kitten"
+
+      // Preprocess text for TTS
+      let processedText = input.text
+
+      if (config.ttsPreprocessingEnabled !== false) {
+        // Use LLM-based preprocessing if enabled, otherwise fall back to regex
+        if (config.ttsUseLLMPreprocessing) {
+          processedText = await preprocessTextForTTSWithLLM(input.text, config.ttsLLMPreprocessingProviderId)
+        } else {
+          // Use regex-based preprocessing
+          const preprocessingOptions = {
+            removeCodeBlocks: config.ttsRemoveCodeBlocks ?? true,
+            removeUrls: config.ttsRemoveUrls ?? true,
+            convertMarkdown: config.ttsConvertMarkdown ?? true,
+          }
+          processedText = preprocessTextForTTS(input.text, preprocessingOptions)
+        }
+      }
+
+      // Validate processed text
+      const validation = validateTTSText(processedText)
+      if (!validation.isValid) {
+        throw new Error(`TTS validation failed: ${validation.issues.join(", ")}`)
+      }
+
+      try {
+        let audioBuffer: ArrayBuffer
+
+        if (providerId === "kitten") {
+          const { synthesize } = await import('./kitten-tts')
+          const voiceId = config.kittenVoiceId ?? 0
+          const result = await synthesize(processedText, voiceId, input.speed)
+          const wavBuffer = float32ToWav(result.samples, result.sampleRate)
+          audioBuffer = new Uint8Array(wavBuffer).buffer
+        } else if (providerId === "supertonic") {
+          const { synthesize } = await import('./supertonic-tts')
+          const voice = config.supertonicVoice ?? "M1"
+          const lang = config.supertonicLanguage ?? "en"
+          const speed = input.speed ?? config.supertonicSpeed ?? 1.05
+          const steps = config.supertonicSteps ?? 5
+          const result = await synthesize(processedText, voice, lang, speed, steps)
+          const wavBuffer = float32ToWav(result.samples, result.sampleRate)
+          audioBuffer = new Uint8Array(wavBuffer).buffer
+        } else {
+          throw new Error(`Unsupported TTS provider: ${providerId}. Only local providers (kitten, supertonic) are supported.`)
+        }
+
+        return {
+          audio: audioBuffer,
+          processedText,
+          provider: providerId,
+        }
+      } catch (error) {
+        diagnosticsService.logError("tts", "TTS generation failed", error)
+        throw error
+      }
     }),
 
   // Models Management
@@ -2625,6 +2766,14 @@ export const router = {
         ...(profile.modelConfig?.transcriptPostProcessingNemotronModel && {
           transcriptPostProcessingNemotronModel: profile.modelConfig.transcriptPostProcessingNemotronModel,
         }),
+        // TTS Provider settings
+        ...(profile.modelConfig?.ttsProviderId && {
+          ttsProviderId: profile.modelConfig.ttsProviderId,
+        }),
+        // STT Provider settings
+        ...(profile.modelConfig?.sttProviderId && {
+          sttProviderId: profile.modelConfig.sttProviderId,
+        }),
       }
       configStore.save(updatedConfig)
 
@@ -2690,6 +2839,9 @@ export const router = {
         // Transcript Post-Processing settings
         transcriptPostProcessingProviderId: config.transcriptPostProcessingProviderId,
         transcriptPostProcessingNemotronModel: config.transcriptPostProcessingNemotronModel,
+        // STT/TTS Provider settings
+        sttProviderId: config.sttProviderId,
+        ttsProviderId: config.ttsProviderId,
       })
     }),
 
@@ -2704,6 +2856,9 @@ export const router = {
       // Transcript Post-Processing settings
       transcriptPostProcessingProviderId?: "nemotron"
       transcriptPostProcessingNemotronModel?: string
+      // STT/TTS Provider settings
+      sttProviderId?: "parakeet"
+      ttsProviderId?: "kitten" | "supertonic"
     }>()
     .action(async ({ input }) => {
         return profileService.updateProfileModelConfig(input.profileId, {
@@ -2714,6 +2869,9 @@ export const router = {
         // Transcript Post-Processing settings
         transcriptPostProcessingProviderId: input.transcriptPostProcessingProviderId,
         transcriptPostProcessingNemotronModel: input.transcriptPostProcessingNemotronModel,
+        // STT/TTS Provider settings
+        sttProviderId: input.sttProviderId,
+        ttsProviderId: input.ttsProviderId,
       })
     }),
 
