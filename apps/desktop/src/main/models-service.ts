@@ -150,15 +150,12 @@ async function fetchNemotronModels(
     },
   )
 
-  // Filter to Nemotron and related NVIDIA models
-  const filteredModels = data.data.filter(
-    (model) =>
-      model.id &&
-      model.id.length > 0 &&
-      (model.id.includes("nemotron") || model.id.startsWith("nvidia/"))
+  // Return all models from the API (no filtering - show everything the endpoint provides)
+  const validModels = data.data.filter(
+    (model) => model.id && model.id.length > 0
   )
 
-  return filteredModels
+  return validModels
     .map((model) => ({
       id: model.id,
       name: formatModelName(model.id),
@@ -167,11 +164,11 @@ async function fetchNemotronModels(
       created: model.created,
     }))
     .sort((a, b) => {
-      // Prioritize Nemotron models
-      const aIsNemotron = a.id.includes("nemotron")
-      const bIsNemotron = b.id.includes("nemotron")
-      if (aIsNemotron && !bIsNemotron) return -1
-      if (!aIsNemotron && bIsNemotron) return 1
+      // Prioritize NVIDIA/Nemotron models, then sort alphabetically
+      const aIsNvidia = a.id.includes("nemotron") || a.id.startsWith("nvidia/")
+      const bIsNvidia = b.id.includes("nemotron") || b.id.startsWith("nvidia/")
+      if (aIsNvidia && !bIsNvidia) return -1
+      if (!aIsNvidia && bIsNvidia) return 1
       return a.name.localeCompare(b.name)
     })
 }
